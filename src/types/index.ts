@@ -53,7 +53,7 @@ export interface Character {
     name: string;
     avatar: string;
     vehicle: string;
-    color: string;
+    color?: string;
     stats: {
         speed: number;
         handling: number;
