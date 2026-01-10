@@ -131,7 +131,7 @@ export default function GameSpeedPage() {
         currentLap: 1,
         totalLaps: 1,
         cameraDepth: 1 / Math.tan((FIELD_OF_VIEW / 2) * Math.PI / 180),
-        viewMode: 'third' as 'first' | 'third'
+        viewMode: 'third' as 'first' | 'third',
         bgOffset: 0,
     });
 
