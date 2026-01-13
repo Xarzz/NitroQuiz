@@ -95,8 +95,8 @@ const COLORS = {
     SKY: '#020617', // Deep Midnight Blue/Black
     TREE: '#064e3b',
     FOG: '#020617',
-    LIGHT: { road: '#101827', grass: '#050a0f', rumble: '#111827', strip: '#334155', sidewalk: '#1e293b', curb: '#334155' },
-    DARK: { road: '#0d1117', grass: '#03070b', rumble: '#0d1117', strip: '', sidewalk: '#111827', curb: '#1e293b' },
+    LIGHT: { road: '#0a0d14', grass: '#040608', rumble: '#111827', strip: '#fbbf24', sidewalk: '#1e293b', curb: '#334155' }, // Neon Yellow Markings
+    DARK: { road: '#05070a', grass: '#020304', rumble: '#0d1117', strip: '', sidewalk: '#111827', curb: '#1e293b' },
     START: { road: '#ffffff', grass: '#1e40af', rumble: '#ffffff', strip: '', sidewalk: '#ffffff', curb: '#ffffff' },
     FINISH: { road: '#000000', grass: '#000000', rumble: '#000000', strip: '', sidewalk: '#000000', curb: '#000000' }
 };
@@ -106,8 +106,8 @@ export default function GameSpeedPage() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // Game State
-    const [gameState, setGameState] = useState<'countdown' | 'playing' | 'finished' | 'gameover'>('countdown');
-    const [countdown, setCountdown] = useState(3);
+    const [gameState, setGameState] = useState<'preparation' | 'countdown' | 'playing' | 'finished' | 'gameover'>('preparation');
+    const [countdown, setCountdown] = useState(5); // Countdown dari 5
     const [stats, setStats] = useState({ speed: 0, nos: 100, lap: 1, totalLaps: 1 });
     const [viewMode, setViewMode] = useState<'first' | 'third'>('third');
     const [assetsLoaded, setAssetsLoaded] = useState(false);
@@ -135,10 +135,20 @@ export default function GameSpeedPage() {
         cameraDepth: 1 / Math.tan((FIELD_OF_VIEW / 2) * Math.PI / 180),
         viewMode: 'third' as 'first' | 'third',
         bgOffset: 0,
+        // NOS Animation State
+        nosPhase: 'idle' as 'idle' | 'startup' | 'loop' | 'ending',
+        nosFrame: 0,
+        nosFrameTimer: 0,
+        nosWasPressed: false,
+        // Starting Sequence - Revving State
+        revvingFrame: 0, // 0 atau 1 untuk toggle antara start_1 dan start_2
+        revvingTimer: 0,
     });
+
 
     const animationFrameRef = useRef<number>(0);
     const miniMapRef = useRef<HTMLCanvasElement>(null);
+
 
     // --- Loading Assets ---
     useEffect(() => {
@@ -169,6 +179,22 @@ export default function GameSpeedPage() {
                 { name: 'truck1', src: '/assets/vehicles/truck1.png' },
                 { name: 'truck2', src: '/assets/vehicles/truck2.png' },
                 { name: 'car_1st', src: '/assets/vehicles/1rd-pov/1rd-sonic-foward-v2.png' },
+                // Starting Sequence - Revving Animation
+                { name: 'start_1', src: '/assets/vehicles/start/1.png' },
+                { name: 'start_2', src: '/assets/vehicles/start/2.png' },
+                // NOS Animation Frames
+                { name: 'nos_1', src: '/assets/vehicles/gif/1.png' },
+                { name: 'nos_2', src: '/assets/vehicles/gif/2.png' },
+                { name: 'nos_3', src: '/assets/vehicles/gif/3.png' },
+                { name: 'nos_4', src: '/assets/vehicles/gif/4.png' },
+                { name: 'nos_5', src: '/assets/vehicles/gif/5.png' },
+                { name: 'nos_6', src: '/assets/vehicles/gif/6.png' },
+                { name: 'nos_7', src: '/assets/vehicles/gif/7.png' },
+                { name: 'nos_8', src: '/assets/vehicles/gif/8.png' },
+                { name: 'nos_9', src: '/assets/vehicles/gif/9.png' },
+                { name: 'nos_41', src: '/assets/vehicles/gif/41.png' },
+                { name: 'nos_42', src: '/assets/vehicles/gif/42.png' },
+                { name: 'nos_43', src: '/assets/vehicles/gif/43.png' },
             ];
 
             const promises = assetList.map(item => new Promise<void>((resolve) => {
@@ -468,26 +494,6 @@ export default function GameSpeedPage() {
         ctx.closePath();
         ctx.fill();
 
-        // --- Environmental Polish: Wet Road Reflections & City Light Glare ---
-        // 1. Subtle 'Wet Surface' Sheen
-        const roadGradient = ctx.createLinearGradient(0, y2, 0, y1);
-        roadGradient.addColorStop(0, 'rgba(255, 255, 255, 0.02)');
-        roadGradient.addColorStop(1, 'rgba(255, 255, 255, 0.08)');
-        ctx.fillStyle = roadGradient;
-        ctx.fill();
-
-        // 2. Random 'City Light' Reflected Glares on Asphalt
-        // Based on segment index to stay stable as you drive
-        const hash = (Math.sin(y1 * 0.1) * 10000) % 1;
-        if (hash > 0.8) {
-            const rx = x1 - w1 + (Math.abs(hash) * w1 * 2);
-            const rw = w1 * 0.2;
-            const grad = ctx.createRadialGradient(rx, y1, 0, rx, y1, rw);
-            grad.addColorStop(0, 'rgba(59, 130, 246, 0.15)'); // Blue neon glare
-            grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
-            ctx.fillStyle = grad;
-            ctx.fill();
-        }
 
         // Zebra Cross
         if (zebra) {
@@ -528,84 +534,78 @@ export default function GameSpeedPage() {
     const renderSprite = (ctx: CanvasRenderingContext2D, width: number, height: number, resolution: number, roadWidth: number, sprite: any, scale: number, destX: number, destY: number, offsetX: number, offsetY: number, clipY: number) => {
         if (!sprite) return;
 
-        // Scaling based on world-width (relative to ROAD_WIDTH 2000)
         const name = (sprite as any).assetName;
-        let worldWidth = 800; // NPC cars & Rival (Reduced from 1100)
-        if (name === 'traffic_light') worldWidth = 1000;
-        else if (name === 'truck1' || name === 'truck2') worldWidth = 1300; // Trucks (Reduced from 1700)
-        else if (name === 'kaffe1' || name === 'restoran1' || name === 'seven_eleven') worldWidth = 6500; // Buildings
+
+        // Optimized scaling - more stable proportions
+        let worldWidth = 400; // Default cars (reduced for stability)
+        if (name === 'traffic_light') worldWidth = 500;
+        else if (name === 'truck1' || name === 'truck2') worldWidth = 600; // Trucks slightly bigger
+        else if (name === 'car_rival' || name === 'foward-opponent') worldWidth = 450; // Rival car
+        else if (name === 'kaffe1' || name === 'restoran1' || name === 'seven_eleven') worldWidth = 3000; // Buildings
 
         const destW = scale * worldWidth * (width / 2);
         const destH = destW * (sprite.height / sprite.width);
 
-        destX = destX + (destW * (offsetX || 0));
-        destY = destY + (destH * (offsetY || 0));
+        // Clamp sprite dimensions to prevent extreme sizes
+        const maxSpriteW = width * 0.8;
+        const maxSpriteH = height * 0.6;
+        const clampedW = Math.min(destW, maxSpriteW);
+        const clampedH = Math.min(destH, maxSpriteH);
 
-        const clipH = clipY ? Math.max(0, destY + destH - clipY) : 0;
-        if (clipH < destH) {
-            ctx.drawImage(sprite, 0, 0, sprite.width, sprite.height - (sprite.height * clipH / destH), destX, destY, destW, destH - clipH);
+        destX = destX + (clampedW * (offsetX || 0));
+        // Improved vertical positioning - sprites sit on the road
+        destY = destY + (clampedH * Math.min(offsetY || 0, -0.5));
+
+        const clipH = clipY ? Math.max(0, destY + clampedH - clipY) : 0;
+        if (clipH < clampedH && clampedH > 1) {
+            ctx.save();
+            ctx.drawImage(sprite, 0, 0, sprite.width, sprite.height - (sprite.height * clipH / clampedH), destX, destY, clampedW, clampedH - clipH);
+            ctx.restore();
         }
     };
 
     const renderPlayer = (ctx: CanvasRenderingContext2D, width: number, height: number, resolution: number, roadWidth: number, speedPercent: number, scale: number, destX: number, destY: number, steer: number, updown: number, viewMode: 'first' | 'third') => {
-        const { keyLeft, keyRight, sprites } = state.current;
+        const { keyLeft, keyRight, keyFaster, sprites } = state.current;
 
         if (viewMode === 'first') {
             const sprite = sprites.car_1st;
             if (!sprite) return;
 
             // 1st Person POV: Cockpit/Hands
-            const bounce = (2.0 * Math.random() * speedPercent * resolution) * Util.randomChoice([1, -1]);
-
             // "Full Screen" scaling: Scale to fit width
             const destW = width;
             const destH = destW * (sprite.height / sprite.width);
 
             // Centered horizontally, pushed lower to show more road
             const x = (steer * -30);
-            const y = height - (destH * 0.8) + bounce; // Only show top 80% of the sprite, or just push it down 20%
+            const y = height - (destH * 0.8); // Posisi tetap stabil tanpa bounce
 
-            // --- Boost Effect (1st Person POV side glow & sparks) ---
-            if (state.current.keyBoost && state.current.nos > 0) {
-                ctx.save();
-                // Bottom screen glow
-                const gradBoost = ctx.createLinearGradient(0, height, 0, height - 200);
-                gradBoost.addColorStop(0, 'rgba(239, 68, 68, 0.4)'); // Reddish
-                gradBoost.addColorStop(0.5, 'rgba(251, 146, 60, 0.2)'); // Orange
-                gradBoost.addColorStop(1, 'rgba(251, 146, 60, 0)');
-                ctx.fillStyle = gradBoost;
-                ctx.fillRect(0, 0, width, height);
-
-                // Flying sparks towards the camera
-                for (let i = 0; i < 5; i++) {
-                    const sx = Math.random() * width;
-                    const sy = height - (Math.random() * 300);
-                    const ssize = 1 + Math.random() * 3;
-                    ctx.fillStyle = '#fff';
-                    ctx.beginPath();
-                    ctx.arc(sx, sy, ssize, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.restore();
-            }
-
-            // Apply slight tilt when steering for more immersive feel
-            if (keyLeft || keyRight) {
-                ctx.save();
-                ctx.translate(width / 2, height);
-                ctx.rotate((keyLeft ? -0.02 : 0.02));
-                ctx.translate(-width / 2, -height);
-                ctx.drawImage(sprite, x, y, destW, destH);
-                ctx.restore();
-            } else {
-                ctx.drawImage(sprite, x, y, destW, destH);
-            }
+            // Render sprite apa adanya tanpa tilt
+            ctx.drawImage(sprite, x, y, destW, destH);
             return;
         }
 
-        // Sprite Selection Logic (Steering)
+        // --- 3rd Person POV ---
+
+        // Starting Sequence - Revving Animation saat Countdown
+        const isCountdown = gameState === 'countdown';
+
+        // Update revving animation timer
+        if (isCountdown && keyFaster) {
+            state.current.revvingTimer += 16; // ~60fps
+            if (state.current.revvingTimer >= 100) { // Toggle setiap 100ms untuk efek greng-greng
+                state.current.revvingTimer = 0;
+                state.current.revvingFrame = state.current.revvingFrame === 0 ? 1 : 0;
+            }
+        }
+
         let sprite = sprites.car;
-        if (keyLeft) {
+
+        // Pilih sprite berdasarkan kondisi
+        if (isCountdown && keyFaster) {
+            // Saat countdown dan user tekan gas, tampilkan animasi revving
+            sprite = state.current.revvingFrame === 0 ? sprites.start_1 : sprites.start_2;
+        } else if (keyLeft) {
             sprite = sprites.car_diag_left || sprites.car;
         } else if (keyRight) {
             sprite = sprites.car_diag_right || sprites.car;
@@ -613,129 +613,106 @@ export default function GameSpeedPage() {
 
         if (!sprite) return;
 
-        let bounceMultiplier = 1.2;
-        if (state.current.keyBoost && state.current.nos > 0) bounceMultiplier = 4.0;
-        const bounce = (bounceMultiplier * Math.random() * speedPercent * resolution) * Util.randomChoice([1, -1]);
-
-        // Fixed scale for visibility (adjusted for wider road)
+        // Calculate base dimensions from the main car sprite (foward-sonic.png)
+        const baseCar = sprites.car;
         const playerScale = (width / 1920) * 1.5;
-        const destW = sprite.width * playerScale;
-        const destH = sprite.height * playerScale;
+        const baseW = baseCar ? baseCar.width * playerScale : 200;
+        const baseH = baseCar ? baseCar.height * playerScale : 100;
 
-        destX = width / 2 - destW / 2 + (steer * 80);
-        destY = height - destH - 35 + bounce;
+        const isNitro = state.current.keyBoost && state.current.nos > 0;
+        const wasPressed = state.current.nosWasPressed;
 
-        // --- Boost Effect (Draw BEFORE car to be behind it) ---
-        if (state.current.keyBoost && state.current.nos > 0) {
-            ctx.save();
-            const flameW = destW * 0.15;
-            const flameH = destH * 0.8; // Taller flames for more impact
-            const exhaustY = destY + destH * 0.85;
-            const leftExhX = destX + destW * 0.25;
-            const rightExhX = destX + destW * 0.75;
+        // NOS Animation State Machine - transisi normal dan cepat
+        const FRAME_DURATION = 60; // ms per frame (lebih cepat untuk transisi natural)
+        state.current.nosFrameTimer += 16; // ~60fps
 
-            [leftExhX, rightExhX].forEach(exX => {
-                const flicker = 0.8 + Math.random() * 0.6;
+        // Define frame sequences - disederhanakan untuk transisi lebih smooth
+        const STARTUP_FRAMES = [1, 3, 5]; // Skip beberapa frame untuk lebih cepat
+        const LOOP_FRAMES = [6, 7, 8, 9];
+        const ENDING_FRAMES = [41, 43]; // Skip frame 42 untuk ending lebih cepat
 
-                // 1. Layer: Outer Glow (Red)
-                const gradOuter = ctx.createLinearGradient(exX, exhaustY, exX, exhaustY + (flameH * flicker));
-                gradOuter.addColorStop(0, 'rgba(255, 69, 0, 0.8)');  // OrangeRed
-                gradOuter.addColorStop(0.5, 'rgba(220, 38, 38, 0.4)'); // Red
-                gradOuter.addColorStop(1, 'rgba(153, 27, 27, 0)');     // Dark Red Transparent
+        let currentNosSprite: any = null;
 
-                ctx.fillStyle = gradOuter;
-                ctx.beginPath();
-                ctx.moveTo(exX - flameW * 0.8, exhaustY);
-                ctx.quadraticCurveTo(exX, exhaustY + flameH * flicker * 1.2, exX + flameW * 0.8, exhaustY);
-                ctx.fill();
 
-                // 2. Layer: Middle Flame (Orange)
-                const gradMid = ctx.createLinearGradient(exX, exhaustY, exX, exhaustY + (flameH * 0.6 * flicker));
-                gradMid.addColorStop(0, 'rgba(251, 146, 60, 0.9)'); // Orange-400
-                gradMid.addColorStop(0.7, 'rgba(234, 88, 12, 0.5)'); // Orange-600
-                gradMid.addColorStop(1, 'rgba(124, 45, 18, 0)');
-
-                ctx.fillStyle = gradMid;
-                ctx.beginPath();
-                ctx.moveTo(exX - flameW * 0.5, exhaustY);
-                ctx.quadraticCurveTo(exX, exhaustY + flameH * 0.8 * flicker, exX + flameW * 0.5, exhaustY);
-                ctx.fill();
-
-                // 3. Layer: Core Flame (Yellow/White)
-                const gradCore = ctx.createLinearGradient(exX, exhaustY, exX, exhaustY + (flameH * 0.3 * flicker));
-                gradCore.addColorStop(0, 'rgba(255, 255, 255, 1)');
-                gradCore.addColorStop(0.4, 'rgba(254, 240, 138, 0.9)'); // Yellow-100
-                gradCore.addColorStop(1, 'rgba(250, 204, 21, 0)');     // Yellow-400
-
-                ctx.fillStyle = gradCore;
-                ctx.beginPath();
-                ctx.moveTo(exX - flameW * 0.25, exhaustY);
-                ctx.quadraticCurveTo(exX, exhaustY + flameH * 0.4 * flicker, exX + flameW * 0.25, exhaustY);
-                ctx.fill();
-
-                // 4. Sparks/Ember Particles
-                for (let i = 0; i < 4; i++) {
-                    const px = exX + (Math.random() - 0.5) * flameW * 3;
-                    const py = exhaustY + Math.random() * flameH * 0.8;
-                    const size = 1 + Math.random() * 2;
-                    ctx.fillStyle = Math.random() > 0.5 ? '#fff' : '#fef01e';
-                    ctx.beginPath();
-                    ctx.arc(px, py, size, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            });
-            ctx.restore();
-        }
-
-        // --- Braking Smoke (Draw BEFORE car) ---
-        if (state.current.keySlower && state.current.speed > 500) {
-            ctx.save();
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            for (let i = 0; i < 3; i++) {
-                ctx.beginPath();
-                ctx.arc(destX + (Math.random() * destW), destY + destH - Math.random() * 10, 5 + Math.random() * 10, 0, Math.PI * 2);
-                ctx.fill();
+        if (isNitro) {
+            // NOS is being pressed
+            if (!wasPressed) {
+                // Just started pressing - begin startup animation
+                state.current.nosPhase = 'startup';
+                state.current.nosFrame = 0;
+                state.current.nosFrameTimer = 0;
             }
-            ctx.restore();
-        }
 
-        // Apply a slight tilt if it's the base sprite (pseudo-turning)
-        const needsPseudoTilt = sprite === sprites.car && (keyLeft || keyRight);
-        if (needsPseudoTilt) {
-            ctx.save();
-            ctx.translate(destX + destW / 2, destY + destH);
-            ctx.rotate((keyLeft ? -0.05 : 0.05));
-            ctx.translate(-(destX + destW / 2), -(destY + destH));
-            ctx.drawImage(sprite, destX, destY, destW, destH);
-            ctx.restore();
+            if (state.current.nosPhase === 'startup') {
+                if (state.current.nosFrameTimer >= FRAME_DURATION) {
+                    state.current.nosFrameTimer = 0;
+                    state.current.nosFrame++;
+                    if (state.current.nosFrame >= STARTUP_FRAMES.length) {
+                        state.current.nosPhase = 'loop';
+                        state.current.nosFrame = 0;
+                    }
+                }
+                const frameNum = STARTUP_FRAMES[state.current.nosFrame];
+                currentNosSprite = sprites[`nos_${frameNum}`];
+            } else if (state.current.nosPhase === 'loop') {
+                if (state.current.nosFrameTimer >= FRAME_DURATION) {
+                    state.current.nosFrameTimer = 0;
+                    state.current.nosFrame = (state.current.nosFrame + 1) % LOOP_FRAMES.length;
+                }
+                const frameNum = LOOP_FRAMES[state.current.nosFrame];
+                currentNosSprite = sprites[`nos_${frameNum}`];
+            }
+
+            state.current.nosWasPressed = true;
         } else {
-            ctx.drawImage(sprite, destX, destY, destW, destH);
+            // NOS is released
+            if (wasPressed) {
+                // Just released - begin ending animation
+                state.current.nosPhase = 'ending';
+                state.current.nosFrame = 0;
+                state.current.nosFrameTimer = 0;
+            }
+
+            if (state.current.nosPhase === 'ending') {
+                if (state.current.nosFrameTimer >= FRAME_DURATION) {
+                    state.current.nosFrameTimer = 0;
+                    state.current.nosFrame++;
+                    if (state.current.nosFrame >= ENDING_FRAMES.length) {
+                        state.current.nosPhase = 'idle';
+                        state.current.nosFrame = 0;
+                    }
+                }
+                if (state.current.nosPhase === 'ending') {
+                    const frameNum = ENDING_FRAMES[state.current.nosFrame];
+                    currentNosSprite = sprites[`nos_${frameNum}`];
+                }
+            }
+
+            state.current.nosWasPressed = false;
         }
 
-        // --- Brake Lights (Draw AFTER car to be on top) ---
-        if (state.current.keySlower) {
-            ctx.save();
-            const lightW = destW * 0.18;
-            const lightH = destH * 0.08;
-            const lightY = destY + destH * 0.55; // Position based on typical car rear
+        // Determine which sprite to draw
+        const finalSprite = currentNosSprite || sprite;
 
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = 'red';
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+        // Tentukan ukuran berdasarkan jenis sprite
+        let finalW, finalH;
 
-            // Left Brake Light
-            ctx.fillRect(destX + destW * 0.15, lightY, lightW, lightH);
-            // Right Brake Light
-            ctx.fillRect(destX + destW * 0.67, lightY, lightW, lightH);
-
-            // Extra corona glow
-            ctx.globalAlpha = 0.3;
-            ctx.beginPath();
-            ctx.arc(destX + destW * 0.24, lightY + lightH / 2, lightW, 0, Math.PI * 2);
-            ctx.arc(destX + destW * 0.76, lightY + lightH / 2, lightW, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
+        if (currentNosSprite || (isCountdown && keyFaster)) {
+            // Untuk sprite NOS dan START animation (revving), gunakan ukuran tetap dari base car 
+            // agar transisi animasi tetap stabil dan tidak berubah ukuran
+            finalW = baseW;
+            finalH = baseH;
+        } else {
+            // Untuk sprite normal (termasuk diag-left dan diag-right), gunakan ukuran asli sprite
+            finalW = finalSprite.width * playerScale;
+            finalH = finalSprite.height * playerScale;
         }
+
+        const finalX = width / 2 - finalW / 2 + (steer * 50);
+        const finalY = height - finalH - 35;
+
+        // Render sprite apa adanya tanpa tilt - gambar sudah memiliki posisi miring sendiri
+        ctx.drawImage(finalSprite, finalX, finalY, finalW, finalH);
     };
 
     // --- Core Updates ---
@@ -747,9 +724,11 @@ export default function GameSpeedPage() {
         const speedPercent = speed / MAX_SPEED;
         const dx = dt * 2 * speedPercent;
 
-        // Move
-        position = Util.increase(position, dt * speed, trackLength);
-        state.current.position = position;
+        // Move - TIDAK bergerak saat countdown
+        if (gameState !== 'countdown') {
+            position = Util.increase(position, dt * speed, trackLength);
+            state.current.position = position;
+        }
 
         // Steer
         let nextPlayerX = playerX;
@@ -757,7 +736,7 @@ export default function GameSpeedPage() {
         else if (keyRight) nextPlayerX = playerX + dx;
 
         // Centrifugal
-        nextPlayerX = nextPlayerX - (dx * speedPercent * playerSegment.curve * 0.3);
+        nextPlayerX = nextPlayerX - (dx * speedPercent * playerSegment.curve * 0.2); // Dikurangi untuk centrifugal lebih halus
 
         // Speed & NOS Logic
         let nextSpeed = speed;
@@ -765,15 +744,26 @@ export default function GameSpeedPage() {
 
         const GAS_LIMIT = MAX_SPEED * 0.9;    // ~180 KPH
         const BOOST_LIMIT = MAX_SPEED * 1.1;  // ~220 KPH
+        const REVVING_LIMIT = MAX_SPEED * 0.2; // ~40 KPH untuk revving saat countdown
 
-        if (keyBoost && nextNos > 0) {
+        // Saat countdown, batasi kecepatan untuk efek revving di tempat
+        if (gameState === 'countdown') {
+            if (keyFaster) {
+                // Bisa gas tapi mentok di 40 KPH
+                nextSpeed = Util.accelerate(speed, ACCEL * 0.5, dt);
+                nextSpeed = Math.min(nextSpeed, REVVING_LIMIT);
+            } else {
+                // Turun perlahan kalau tidak tekan gas
+                nextSpeed = Util.accelerate(speed, DECEL, dt);
+            }
+        } else if (keyBoost && nextNos > 0) {
             // NOS BOOSTING
             nextSpeed = Util.accelerate(speed, ACCEL * 2.5, dt);
             nextNos = Math.max(0, nextNos - dt * 25); // Faster consumption
 
-            // Jitter effect at top speed (220 KPH region)
+            // Jitter effect at top speed (220 KPH region) - dikurangi untuk lebih halus
             if (nextSpeed >= BOOST_LIMIT - 300) {
-                const jitter = (Math.random() - 0.5) * 500;
+                const jitter = (Math.random() - 0.5) * 200;
                 nextSpeed = Util.limit(nextSpeed + jitter, 0, BOOST_LIMIT);
             }
         } else if (keyFaster) {
@@ -887,6 +877,9 @@ export default function GameSpeedPage() {
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
+
+        // Nonaktifkan image smoothing untuk menghilangkan blur
+        ctx.imageSmoothingEnabled = false;
 
         const width = canvas.width;
         const height = canvas.height;
@@ -1306,8 +1299,8 @@ export default function GameSpeedPage() {
             inset: 0,
             backgroundColor: '#020617',
             overflow: 'hidden',
-            filter: stats.speed > 150 ? `blur(${(stats.speed - 150) / 40}px)` : 'none', // Motion Blur at high speed
-            transition: 'filter 0.1s ease'
+            filter: (stats.speed > 150 ? `blur(${(stats.speed - 150) / 40}px) ` : '') + 'contrast(1.1) brightness(0.95) saturate(1.2)', // Color Grading
+            transition: 'filter 0.2s ease'
         }}>
             {/* Main Game Canvas */}
             <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
@@ -1455,51 +1448,55 @@ export default function GameSpeedPage() {
                                     backdropFilter: 'blur(20px)',
                                     borderRadius: isMobile ? '1rem' : '1.5rem',
                                     border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                     cursor: 'pointer', outline: 'none',
+                                    opacity: 0.9,
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
                                 }}
                                 onTouchStart={(e) => { e.preventDefault(); state.current.keySlower = true; }}
                                 onTouchEnd={(e) => { e.preventDefault(); state.current.keySlower = false; }}
                             >
-                                <div style={{ width: isMobile ? '14px' : '20px', height: isMobile ? '14px' : '20px', backgroundColor: 'rgba(255, 255, 255, 0.4)', borderRadius: '4px' }} />
+                                <span style={{ fontSize: isMobile ? '10px' : '14px', fontWeight: 900, textTransform: 'uppercase' }}>BRAKE</span>
                             </button>
 
                             {/* Gas Button (GO) */}
                             <button
                                 style={{
-                                    width: isMobile ? '5rem' : '8rem', height: isMobile ? '5.5rem' : '8rem',
-                                    background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
+                                    width: isMobile ? '5.5rem' : '8.5rem', height: isMobile ? '5.5rem' : '8.5rem',
+                                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                                     backdropFilter: 'blur(24px)',
-                                    borderRadius: isMobile ? '1.5rem' : '2.5rem',
-                                    border: 'none',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    borderRadius: isMobile ? '1.5rem' : '3rem',
+                                    border: '2px solid rgba(255, 255, 255, 0.2)',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                     cursor: 'pointer', outline: 'none',
-                                    boxShadow: '0 12px 40px rgba(34, 197, 94, 0.4)',
-                                    position: 'relative',
-                                    overflow: 'hidden'
+                                    boxShadow: '0 15px 45px rgba(16, 185, 129, 0.4), inset 0 0 25px rgba(255,255,255,0.1)',
+                                    transition: 'transform 0.1s active'
                                 }}
                                 onTouchStart={(e) => { e.preventDefault(); state.current.keyFaster = true; }}
                                 onTouchEnd={(e) => { e.preventDefault(); state.current.keyFaster = false; }}
                             >
-                                <span style={{ fontSize: isMobile ? '1.25rem' : '1.75rem', fontWeight: 900, color: 'white' }}>GO</span>
+                                <span style={{ fontSize: isMobile ? '1.2rem' : '1.5rem', fontWeight: 900, color: 'white' }}>GO</span>
                             </button>
 
-                            {/* Boost Button (NOS) */}
+                            {/* Boost Button (NOS) - Blue Neon Theme */}
                             <button
                                 style={{
-                                    width: isMobile ? '4rem' : '6rem', height: isMobile ? '4.5rem' : '6rem',
-                                    background: 'linear-gradient(135deg, #ef4444 0%, #7f1d1d 100%)',
+                                    width: isMobile ? '4.5rem' : '6.5rem', height: isMobile ? '4.5rem' : '6.5rem',
+                                    background: stats.nos > 0 ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'rgba(255, 255, 255, 0.1)',
                                     backdropFilter: 'blur(24px)',
                                     borderRadius: isMobile ? '1.25rem' : '2rem',
-                                    border: 'none',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    border: stats.nos > 0 ? '2px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255,255,255,0.1)',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                     cursor: 'pointer', outline: 'none',
-                                    boxShadow: '0 12px 40px rgba(239, 68, 68, 0.4)',
+                                    boxShadow: stats.nos > 0 ? '0 12px 35px rgba(59, 130, 246, 0.5)' : 'none',
+                                    opacity: stats.nos > 0 ? 1 : 0.5,
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                                 }}
                                 onTouchStart={(e) => { e.preventDefault(); state.current.keyBoost = true; }}
                                 onTouchEnd={(e) => { e.preventDefault(); state.current.keyBoost = false; }}
                             >
-                                <span style={{ fontSize: isMobile ? '0.9rem' : '1.25rem', fontWeight: 900, color: 'white' }}>NOS</span>
+                                <span style={{ fontSize: isMobile ? '1rem' : '1.2rem', fontWeight: 900, color: 'white' }}>NOS</span>
                             </button>
                         </div>
                     </div>
@@ -1514,11 +1511,95 @@ export default function GameSpeedPage() {
                 }
             `}</style>
 
+            {/* Preparation Overlay - Tahap Persiapan Sebelum Balapan */}
+            {mounted && gameState === 'preparation' && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(40px)', color: 'white', fontFamily: 'var(--font-rajdhani), sans-serif' }}>
+                    <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '4rem', borderRadius: '4rem', border: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center', boxShadow: '0 25px 80px rgba(0, 0, 0, 0.9), inset 0 0 40px rgba(255,255,255,0.02)', maxWidth: '40rem', width: '90%' }}>
+                        {/* Racing Icon */}
+                        <div style={{ fontSize: '8rem', marginBottom: '1rem', filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.6))' }}>🏁</div>
+
+                        {/* Title */}
+                        <h1 style={{ fontSize: '4rem', fontWeight: 900, fontStyle: 'italic', marginBottom: '0.5rem', background: 'linear-gradient(to bottom, #fff, #3b82f6)', WebkitBackgroundClip: 'text', color: 'transparent', textShadow: '0 10px 30px rgba(59, 130, 246, 0.3)' }}>GET READY!</h1>
+                        <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4em', marginBottom: '3rem', fontSize: '0.9rem' }}>Persiapan Balapan</p>
+
+                        {/* Race Info */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.2em', marginBottom: '0.5rem' }}>Laps</div>
+                                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#60a5fa', fontStyle: 'italic' }}>{stats.totalLaps}</div>
+                            </div>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.2em', marginBottom: '0.5rem' }}>NOS</div>
+                                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981', fontStyle: 'italic' }}>{stats.nos}%</div>
+                            </div>
+                        </div>
+
+                        {/* Instructions */}
+                        <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(59, 130, 246, 0.3)', marginBottom: '2.5rem' }}>
+                            <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.6', margin: 0 }}>
+                                💡 <strong>Tip:</strong> Saat countdown, tekan <strong>W/↑</strong> untuk revving engine!<br />
+                                Kecepatan akan mentok di ~40 KPH sampai balapan dimulai.
+                            </p>
+                        </div>
+
+                        {/* Start Button */}
+                        <button
+                            onClick={() => {
+                                setGameState('countdown');
+                                // Start countdown sequence dari 5
+                                let count = 5;
+                                setCountdown(count);
+                                const interval = setInterval(() => {
+                                    count--;
+                                    setCountdown(count);
+                                    if (count <= 0) {
+                                        clearInterval(interval);
+                                        setTimeout(() => {
+                                            setGameState('playing');
+                                        }, 500);
+                                    }
+                                }, 1000);
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: '2rem 0',
+                                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                color: '#fff',
+                                borderRadius: '2rem',
+                                fontWeight: 900,
+                                fontSize: '2rem',
+                                cursor: 'pointer',
+                                border: '2px solid rgba(255, 255, 255, 0.3)',
+                                boxShadow: '0 0 60px rgba(59, 130, 246, 0.6), inset 0 0 30px rgba(255,255,255,0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '1rem',
+                                outline: 'none',
+                                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                animation: 'pulse-glow 2s infinite'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'scale(1.05)';
+                                e.currentTarget.style.boxShadow = '0 0 80px rgba(59, 130, 246, 0.8), inset 0 0 40px rgba(255,255,255,0.2)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.boxShadow = '0 0 60px rgba(59, 130, 246, 0.6), inset 0 0 30px rgba(255,255,255,0.1)';
+                            }}
+                        >
+                            <span style={{ letterSpacing: '0.1em' }}>START RACE</span>
+                            <span style={{ fontSize: '2rem' }}>🏁</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Countdown Overlay */}
             {mounted && gameState === 'countdown' && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.4)', backdropFilter: 'blur(32px)', color: 'white', fontFamily: 'var(--font-rajdhani), sans-serif' }}>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.2)', color: 'white', fontFamily: 'var(--font-rajdhani), sans-serif' }}>
                     <div style={{ position: 'relative' }}>
-                        <div style={{ position: 'absolute', inset: '-10rem', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)', filter: 'blur(150px)', borderRadius: '9999px' }} />
+                        <div style={{ position: 'absolute', inset: '-10rem', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%)', filter: 'blur(150px)', borderRadius: '9999px' }} />
                         <div style={{
                             fontSize: '25rem',
                             fontWeight: 900,
