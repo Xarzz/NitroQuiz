@@ -1508,21 +1508,30 @@ export default function GameSpeedPage() {
             }
 
             if (mappedTouchEnded) {
-                // Only add swipe handlers if mobile AND in portrait mode
-                if (isMobile && mobileOrientationChoice === 'portrait') {
-                    window.addEventListener('touchstart', handleTouchStart, { passive: false });
-                    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    window.addEventListener('touchend', handleTouchEnd, { passive: false });
-                    window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-                }
+                steeringTouchId.current = null;
+                touchStartX.current = null;
+                touchCurrentX.current = null;
+                state.current.analogSteer = 0;
+                state.current.keyLeft = false;
+                state.current.keyRight = false;
+            }
+        };
 
-                return () => {
-                    window.removeEventListener('touchstart', handleTouchStart);
-                    window.removeEventListener('touchmove', handleTouchMove);
-                    window.removeEventListener('touchend', handleTouchEnd);
-                    window.removeEventListener('touchcancel', handleTouchEnd);
-                };
-            }, [isMobile, mobileOrientationChoice]);
+        // Only add swipe handlers if mobile AND in portrait mode
+        if (isMobile && mobileOrientationChoice === 'portrait') {
+            window.addEventListener('touchstart', handleTouchStart, { passive: false });
+            window.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchend', handleTouchEnd, { passive: false });
+            window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+        }
+
+        return () => {
+            window.removeEventListener('touchstart', handleTouchStart);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleTouchEnd);
+            window.removeEventListener('touchcancel', handleTouchEnd);
+        };
+    }, [isMobile, mobileOrientationChoice]);
 
     // Resize handling with mobile detection and aspect ratio
     useEffect(() => {
