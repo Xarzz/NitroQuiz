@@ -119,6 +119,8 @@ export default function GameSpeedPage() {
     const [mounted, setMounted] = useState(false);
     const [aspectRatio, setAspectRatio] = useState(1); // width/height ratio for responsive sizing
     const [miniMapMinimized, setMiniMapMinimized] = useState(false);
+    const [isBraking, setIsBraking] = useState(false);
+    const [isBoosting, setIsBoosting] = useState(false);
     const [mobileOrientationChoice, setMobileOrientationChoice] = useState<'portrait' | 'landscape' | null>(null);
 
     const usePCLayout = !isMobile || mobileOrientationChoice === 'landscape';
@@ -1004,7 +1006,10 @@ export default function GameSpeedPage() {
             // physics calculation
             const tryingToBoost = keyBoost && nextNos > 0;
 
-            if (tryingToBoost) {
+            if (keySlower) {
+                // BRAKING / STOPPING - Higher priority than Gas for mobile auto-forward
+                nextSpeed = Util.accelerate(speed, BREAKING, dt);
+            } else if (tryingToBoost) {
                 // NOS BOOSTING
                 nextSpeed = Util.accelerate(speed, ACCEL * 2.5, dt);
                 nextNos = Math.max(0, nextNos - dt * 25); // Consumption
@@ -1021,15 +1026,14 @@ export default function GameSpeedPage() {
                     nextSpeed = Math.max(nextSpeed, GAS_LIMIT);
                 }
             } else {
-                // IDLE / BRAKING
-                if (keySlower) nextSpeed = Util.accelerate(speed, BREAKING, dt);
-                else nextSpeed = Util.accelerate(speed, DECEL, dt);
+                // IDLE
+                nextSpeed = Util.accelerate(speed, DECEL, dt);
             }
 
-            // Regen Logic - Only if NOT holding boost key
-            if (!keyBoost) {
+            // Regen Logic - Only if NOT holding boost key and NOT braking
+            if (!keyBoost && !keySlower) {
                 if (keyFaster) nextNos = Math.min(100, nextNos + dt * 2); // Slow regen while driving
-                else nextNos = Math.min(100, nextNos + dt * 8); // Fast regen while idle/braking
+                else nextNos = Math.min(100, nextNos + dt * 8); // Fast regen while idle
             }
         }
 
@@ -2153,13 +2157,13 @@ export default function GameSpeedPage() {
                                             fontWeight: 900,
                                             boxShadow: stats.nos > 0 ? '0 0 25px rgba(59, 130, 246, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.3)' : 'none',
                                             transition: 'all 0.1s ease',
-                                            transform: state.current.keyBoost ? 'scale(0.92)' : 'scale(1)',
+                                            transform: isBoosting ? 'scale(0.92)' : 'scale(1)',
                                             fontFamily: 'var(--font-rajdhani)',
                                             touchAction: 'none'
                                         }}
-                                        onPointerDown={(e) => { e.preventDefault(); state.current.keyBoost = true; }}
-                                        onPointerUp={(e) => { e.preventDefault(); state.current.keyBoost = false; }}
-                                        onPointerCancel={(e) => { e.preventDefault(); state.current.keyBoost = false; }}
+                                        onPointerDown={(e) => { e.preventDefault(); state.current.keyBoost = true; setIsBoosting(true); }}
+                                        onPointerUp={(e) => { e.preventDefault(); state.current.keyBoost = false; setIsBoosting(false); }}
+                                        onPointerCancel={(e) => { e.preventDefault(); state.current.keyBoost = false; setIsBoosting(false); }}
                                     >
                                         <span style={{ fontSize: '1.2rem', fontStyle: 'italic', letterSpacing: '-0.05em' }}>NITRO</span>
                                         <div style={{ width: '60%', height: '2px', backgroundColor: 'rgba(255,255,255,0.4)', marginTop: '2px' }} />
@@ -2173,27 +2177,27 @@ export default function GameSpeedPage() {
                                     <button
                                         style={{
                                             width: '4.5rem', height: '4.5rem',
-                                            background: state.current.keySlower
+                                            background: isBraking
                                                 ? 'radial-gradient(circle at center, #ef4444 0%, #991b1b 100%)'
                                                 : 'rgba(239, 68, 68, 0.1)',
                                             backdropFilter: 'blur(8px)',
                                             borderRadius: '50%',
                                             border: '3px solid #ef4444',
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                            cursor: 'pointer', color: state.current.keySlower ? 'white' : '#ef4444',
+                                            cursor: 'pointer', color: isBraking ? 'white' : '#ef4444',
                                             fontWeight: 900,
-                                            textShadow: state.current.keySlower ? '0 0 10px white' : '0 0 8px rgba(239, 68, 68, 0.8)',
-                                            boxShadow: state.current.keySlower
+                                            textShadow: isBraking ? '0 0 10px white' : '0 0 8px rgba(239, 68, 68, 0.8)',
+                                            boxShadow: isBraking
                                                 ? '0 0 30px rgba(239, 68, 68, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.3)'
                                                 : '0 0 10px rgba(239, 68, 68, 0.2)',
                                             transition: 'all 0.1s ease',
-                                            transform: state.current.keySlower ? 'scale(0.92)' : 'scale(1)',
+                                            transform: isBraking ? 'scale(0.92)' : 'scale(1)',
                                             fontFamily: 'var(--font-rajdhani)',
                                             touchAction: 'none'
                                         }}
-                                        onPointerDown={(e) => { e.preventDefault(); state.current.keySlower = true; }}
-                                        onPointerUp={(e) => { e.preventDefault(); state.current.keySlower = false; }}
-                                        onPointerCancel={(e) => { e.preventDefault(); state.current.keySlower = false; }}
+                                        onPointerDown={(e) => { e.preventDefault(); state.current.keySlower = true; setIsBraking(true); }}
+                                        onPointerUp={(e) => { e.preventDefault(); state.current.keySlower = false; setIsBraking(false); }}
+                                        onPointerCancel={(e) => { e.preventDefault(); state.current.keySlower = false; setIsBraking(false); }}
                                     >
                                         <span style={{ fontSize: '1.2rem', fontStyle: 'italic', letterSpacing: '0.05em' }}>BRAKE</span>
                                         <div style={{ width: '60%', height: '2px', backgroundColor: state.current.keySlower ? 'rgba(255,255,255,0.4)' : 'rgba(239,68,68,0.4)', marginTop: '2px' }} />
