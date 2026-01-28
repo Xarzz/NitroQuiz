@@ -1527,11 +1527,39 @@ export default function GameSpeedPage() {
             window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
         }
 
+        // --- ANTI-ZOOM LOGIC FOR MOBILE ---
+        const preventZoom = (e: TouchEvent) => {
+            if (e.touches.length > 1) {
+                e.preventDefault(); // Prevent pinch zoom
+            }
+        };
+
+        let lastTouchEnd = 0;
+        const preventDoubleTapZoom = (e: TouchEvent) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault(); // Prevent double-tap zoom
+            }
+            lastTouchEnd = now;
+        };
+
+        if (isMobile) {
+            window.addEventListener('touchstart', preventZoom, { passive: false });
+            window.addEventListener('touchend', preventDoubleTapZoom, { passive: false });
+            // For iOS
+            (window as any).addEventListener('gesturestart', (e: any) => e.preventDefault(), { passive: false });
+        }
+
         return () => {
             window.removeEventListener('touchstart', handleTouchStart);
             window.removeEventListener('touchmove', handleTouchMove);
             window.removeEventListener('touchend', handleTouchEnd);
             window.removeEventListener('touchcancel', handleTouchEnd);
+
+            if (isMobile) {
+                window.removeEventListener('touchstart', preventZoom);
+                window.removeEventListener('touchend', preventDoubleTapZoom);
+            }
         };
     }, [isMobile, mobileOrientationChoice]);
 
@@ -1940,7 +1968,8 @@ export default function GameSpeedPage() {
                         flexDirection: 'column',
                         justifyContent: 'space-between',
                         fontFamily: 'sans-serif',
-                        color: 'white'
+                        color: 'white',
+                        touchAction: 'none'
                     }}
                 >
 
@@ -2366,28 +2395,28 @@ export default function GameSpeedPage() {
                 <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.95)' }}>
                     <div style={{
                         backgroundColor: '#0f172a',
-                        padding: usePCLayout ? '3rem' : '2rem',
+                        padding: isMobileLandscape ? '1.25rem 2rem' : (usePCLayout ? '3rem' : '2rem'),
                         borderRadius: usePCLayout ? '2.5rem' : '1.5rem',
                         textAlign: 'center',
                         boxShadow: '0 0 60px rgba(59, 130, 246, 0.4)',
-                        maxWidth: '35rem',
+                        maxWidth: isMobileLandscape ? '30rem' : '35rem',
                         width: '90%',
                         color: 'white',
                         fontFamily: 'var(--font-rajdhani)',
                         border: '2px solid #3b82f6'
                     }}>
-                        <div style={{ fontSize: usePCLayout ? '5rem' : '3rem', marginBottom: '1rem' }}>🏆</div>
-                        <h1 style={{ fontSize: usePCLayout ? '4rem' : '2rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.5rem', background: 'linear-gradient(to bottom, #fff, #fbbf24)', WebkitBackgroundClip: 'text', color: 'transparent' }}>MISSION CLEAR</h1>
-                        <p style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: usePCLayout ? '3rem' : '1.5rem', fontSize: usePCLayout ? '1rem' : '0.7rem' }}>Racing Protocol: Complete</p>
+                        <div style={{ fontSize: isMobileLandscape ? '1.8rem' : (usePCLayout ? '5rem' : '3rem'), marginBottom: isMobileLandscape ? '0.2rem' : '1rem' }}>🏆</div>
+                        <h1 style={{ fontSize: isMobileLandscape ? '1.4rem' : (usePCLayout ? '4rem' : '2rem'), fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.25rem', background: 'linear-gradient(to bottom, #fff, #fbbf24)', WebkitBackgroundClip: 'text', color: 'transparent' }}>MISSION CLEAR</h1>
+                        <p style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: isMobileLandscape ? '1rem' : (usePCLayout ? '3rem' : '1.5rem'), fontSize: isMobileLandscape ? '0.6rem' : (usePCLayout ? '1rem' : '0.7rem') }}>Racing Protocol: Complete</p>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: usePCLayout ? '1.5rem' : '0.75rem', marginBottom: usePCLayout ? '3rem' : '1.5rem' }}>
-                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: usePCLayout ? '1.5rem' : '1rem', borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                <div style={{ fontSize: '0.65rem', color: '#fbbf24', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.25rem' }}>Grade Points</div>
-                                <div style={{ fontSize: usePCLayout ? '3rem' : '2rem', fontWeight: 900 }}>100</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: isMobileLandscape ? '0.5rem' : (usePCLayout ? '1.5rem' : '0.75rem'), marginBottom: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '1.5rem') }}>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobileLandscape ? '0.6rem' : (usePCLayout ? '1.5rem' : '1rem'), borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.65rem', color: '#fbbf24', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.1rem' }}>Grade Points</div>
+                                <div style={{ fontSize: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '2rem'), fontWeight: 900 }}>100</div>
                             </div>
-                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: usePCLayout ? '1.5rem' : '1rem', borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                <div style={{ fontSize: '0.65rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.25rem' }}>Record Time</div>
-                                <div style={{ fontSize: usePCLayout ? '3rem' : '2rem', fontWeight: 900 }}>01:24</div>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobileLandscape ? '0.6rem' : (usePCLayout ? '1.5rem' : '1rem'), borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.65rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.1rem' }}>Record Time</div>
+                                <div style={{ fontSize: isMobileLandscape ? '1.25rem' : (usePCLayout ? '3rem' : '2rem'), fontWeight: 900 }}>01:24</div>
                             </div>
                         </div>
 
@@ -2395,13 +2424,13 @@ export default function GameSpeedPage() {
                             onClick={endGame}
                             style={{
                                 width: '100%',
-                                padding: usePCLayout ? '1.5rem' : '1.25rem',
+                                padding: isMobileLandscape ? '0.75rem' : (usePCLayout ? '1.5rem' : '1.25rem'),
                                 background: 'transparent',
                                 color: '#3b82f6',
                                 border: '2px solid #3b82f6',
                                 borderRadius: '0.75rem',
                                 fontWeight: 900,
-                                fontSize: usePCLayout ? '1.5rem' : '1.25rem',
+                                fontSize: isMobileLandscape ? '1rem' : (usePCLayout ? '1.5rem' : '1.25rem'),
                                 cursor: 'pointer'
                             }}
                         >
