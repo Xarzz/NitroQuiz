@@ -119,6 +119,11 @@ export default function GameSpeedPage() {
     const [mounted, setMounted] = useState(false);
     const [aspectRatio, setAspectRatio] = useState(1); // width/height ratio for responsive sizing
     const [miniMapMinimized, setMiniMapMinimized] = useState(false);
+    const [showOrientationPicker, setShowOrientationPicker] = useState(false);
+    const [forcedLandscape, setForcedLandscape] = useState(false);
+
+    // Derived state for UI decisions
+    const effectiveIsMobile = isMobile && !forcedLandscape;
 
     // Touch/Swipe refs for mobile controls
     const touchStartX = useRef<number | null>(null);
@@ -326,6 +331,14 @@ export default function GameSpeedPage() {
             }
 
             setAssetsLoaded(true);
+
+            // If on mobile, show orientation picker before starting
+            // Check current window width/height to confirm mobile status
+            const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const isSmall = window.innerWidth < 768 || (window.innerWidth / window.innerHeight) < 1;
+            if (hasTouch && isSmall) {
+                setShowOrientationPicker(true);
+            }
         };
         loadAssets();
     }, []);
@@ -1512,8 +1525,8 @@ export default function GameSpeedPage() {
             }
         };
 
-        // Only add swipe handlers if mobile
-        if (isMobile) {
+        // Only add swipe handlers if mobile UI is active
+        if (effectiveIsMobile) {
             window.addEventListener('touchstart', handleTouchStart, { passive: false });
             window.addEventListener('touchmove', handleTouchMove, { passive: false });
             window.addEventListener('touchend', handleTouchEnd, { passive: false });
@@ -1548,8 +1561,8 @@ export default function GameSpeedPage() {
 
             setIsMobile(detectedMobile);
 
-            // On mobile, auto-forward is always enabled (car drives automatically)
-            if (detectedMobile && gameState === 'playing') {
+            // On mobile portrait, auto-forward is always enabled
+            if (effectiveIsMobile && gameState === 'playing') {
                 state.current.keyFaster = true;
             }
         };
@@ -1558,12 +1571,12 @@ export default function GameSpeedPage() {
         return () => window.removeEventListener('resize', setSize);
     }, [mounted, gameState]);
 
-    // Mobile auto-forward: Keep gas pressed while playing on mobile
+    // Mobile auto-forward: Keep gas pressed while playing on mobile portrait
     useEffect(() => {
-        if (isMobile && gameState === 'playing') {
+        if (effectiveIsMobile && gameState === 'playing') {
             state.current.keyFaster = true;
         }
-    }, [isMobile, gameState]);
+    }, [effectiveIsMobile, gameState]);
 
     const drawMiniMap = () => {
         const canvas = miniMapRef.current;
@@ -1843,40 +1856,50 @@ export default function GameSpeedPage() {
             )}
 
             {/* UI Overlay - Using explicitly inline styles to bypass Tailwind generation issues */}
-            {mounted && assetsLoaded && (
+            {mounted && assetsLoaded && !showOrientationPicker && (
                 <div
                     style={{
                         position: 'fixed',
                         inset: 0,
-                        pointerEvents: 'none',
-                        zIndex: 200,
-                        padding: isMobile ? '0.75rem' : '2rem',
+                        zIndex: 100,
+                        padding: effectiveIsMobile ? '1rem' : '2rem',
                         display: 'flex',
-                        flexDirection: 'column',
+                        flexDirection: effectiveIsMobile ? 'column' : 'row',
                         justifyContent: 'space-between',
-                        fontFamily: 'sans-serif',
-                        color: 'white'
+                        pointerEvents: 'none',
+                        fontFamily: 'var(--font-rajdhani)'
                     }}
                 >
-
                     {/* Header: Stats & Map */}
-                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'center' : 'start', width: '100%', gap: '1rem' }}>
-                        {/* Velocity & Points - Premium Glassmorphism */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: isMobile ? '100%' : 'auto' }}>
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: effectiveIsMobile ? 'column' : 'row',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        gap: effectiveIsMobile ? '0.75rem' : '2rem'
+                    }}>
+                        {/* Stats Group - Speed & NOS */}
+                        <div style={{
+                            display: 'flex',
+                            gap: effectiveIsMobile ? '0.6rem' : '1rem',
+                            alignItems: effectiveIsMobile ? 'flex-start' : 'center',
+                            flexDirection: effectiveIsMobile ? 'column' : 'row',
+                            width: effectiveIsMobile ? '100%' : 'auto'
+                        }}>
+                            <div style={{ display: 'flex', gap: effectiveIsMobile ? '1rem' : '1.5rem', width: effectiveIsMobile ? '100%' : 'auto' }}>
                                 <div style={{
                                     backgroundColor: 'rgba(0, 0, 0, 0.65)',
                                     backdropFilter: 'blur(15px)',
-                                    padding: isMobile ? '0.4rem 0.6rem' : '1.5rem 2.5rem',
-                                    borderRadius: isMobile ? '0.8rem' : '2rem',
+                                    padding: effectiveIsMobile ? '0.4rem 0.6rem' : '1.5rem 2.5rem',
+                                    borderRadius: effectiveIsMobile ? '0.8rem' : '2rem',
                                     border: '1px solid rgba(255, 255, 255, 0.15)',
-                                    flex: isMobile ? 1 : 'none',
-                                    textAlign: isMobile ? 'center' : 'left'
+                                    flex: effectiveIsMobile ? 1 : 'none',
+                                    textAlign: effectiveIsMobile ? 'center' : 'left'
                                 }}>
-                                    <div style={{ fontSize: isMobile ? '7px' : '10px', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.1rem' }}>Speedometer</div>
-                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                                    <div style={{ fontSize: effectiveIsMobile ? '7px' : '10px', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.1rem' }}>Speedometer</div>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', justifyContent: effectiveIsMobile ? 'center' : 'flex-start' }}>
                                         <span style={{
-                                            fontSize: isMobile ? '1.75rem' : '4.5rem',
+                                            fontSize: effectiveIsMobile ? '1.75rem' : '4.5rem',
                                             fontWeight: 900,
                                             fontFamily: 'var(--font-rajdhani)',
                                             color: '#fff',
@@ -1885,7 +1908,7 @@ export default function GameSpeedPage() {
                                         }}>
                                             {stats.speed}
                                         </span>
-                                        <span style={{ fontSize: isMobile ? '0.6rem' : '1rem', color: '#60a5fa', fontWeight: 800 }}>KPH</span>
+                                        <span style={{ fontSize: effectiveIsMobile ? '0.6rem' : '1rem', color: '#60a5fa', fontWeight: 800 }}>KPH</span>
                                     </div>
                                 </div>
 
@@ -1899,9 +1922,9 @@ export default function GameSpeedPage() {
                                         pointerEvents: 'auto',
                                         backgroundColor: 'rgba(59, 130, 246, 0.25)',
                                         backdropFilter: 'blur(15px)',
-                                        width: isMobile ? '2.5rem' : '5rem',
-                                        height: isMobile ? '2.5rem' : '5rem',
-                                        borderRadius: isMobile ? '0.6rem' : '1.25rem',
+                                        width: effectiveIsMobile ? '2.5rem' : '5rem',
+                                        height: effectiveIsMobile ? '2.5rem' : '5rem',
+                                        borderRadius: effectiveIsMobile ? '0.6rem' : '1.25rem',
                                         border: '2px solid rgba(59, 130, 246, 0.5)',
                                         color: 'white',
                                         cursor: 'pointer',
@@ -1913,54 +1936,54 @@ export default function GameSpeedPage() {
                                         gap: '2px'
                                     }}
                                 >
-                                    <span style={{ fontSize: isMobile ? '1rem' : '1.8rem', filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}>
+                                    <span style={{ fontSize: effectiveIsMobile ? '1rem' : '1.8rem', filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}>
                                         {viewMode === 'first' ? '🎥' : '👤'}
                                     </span>
-                                    {!isMobile && <span style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', opacity: 0.8 }}>POV (T)</span>}
+                                    {!effectiveIsMobile && <span style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', opacity: 0.8 }}>POV (T)</span>}
                                 </button>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '0.4rem', width: isMobile ? '100%' : 'auto' }}>
+                            <div style={{ display: 'flex', gap: '0.4rem', width: effectiveIsMobile ? '100%' : 'auto' }}>
                                 <div style={{
                                     backgroundColor: 'rgba(0, 0, 0, 0.65)',
                                     backdropFilter: 'blur(15px)',
-                                    padding: isMobile ? '0.4rem 0.75rem' : '0.6rem 1rem',
-                                    borderRadius: isMobile ? '0.8rem' : '1.25rem',
+                                    padding: effectiveIsMobile ? '0.4rem 0.75rem' : '0.6rem 1rem',
+                                    borderRadius: effectiveIsMobile ? '0.8rem' : '1.25rem',
                                     border: '1px solid rgba(255, 255, 255, 0.1)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '0.5rem',
-                                    flex: isMobile ? 1 : 'none'
+                                    flex: effectiveIsMobile ? 1 : 'none'
                                 }}>
-                                    <span style={{ color: '#60a5fa', fontWeight: 900, fontSize: isMobile ? '0.6rem' : '0.7rem', textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}>NOS</span>
-                                    <div style={{ flex: 1, minWidth: isMobile ? '30px' : '80px', height: isMobile ? '4px' : '6px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                                    <span style={{ color: '#60a5fa', fontWeight: 900, fontSize: effectiveIsMobile ? '0.6rem' : '0.7rem', textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}>NOS</span>
+                                    <div style={{ flex: 1, minWidth: effectiveIsMobile ? '30px' : '80px', height: effectiveIsMobile ? '4px' : '6px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
                                         <div style={{ width: `${stats.nos}%`, height: '100%', backgroundColor: '#3b82f6', boxShadow: '0 0 10px #3b82f6' }} />
                                     </div>
                                 </div>
                                 <div style={{
                                     backgroundColor: 'rgba(0, 0, 0, 0.65)',
                                     backdropFilter: 'blur(15px)',
-                                    padding: isMobile ? '0.4rem 0.75rem' : '0.6rem 1rem',
-                                    borderRadius: isMobile ? '0.8rem' : '1.25rem',
+                                    padding: effectiveIsMobile ? '0.4rem 0.75rem' : '0.6rem 1rem',
+                                    borderRadius: effectiveIsMobile ? '0.8rem' : '1.25rem',
                                     border: '1px solid rgba(255, 255, 255, 0.1)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '0.35rem',
                                     flex: 'none'
                                 }}>
-                                    <span style={{ color: '#4ade80', fontWeight: 900, fontSize: isMobile ? '0.6rem' : '0.7rem', textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>LAP</span>
-                                    <span style={{ fontSize: isMobile ? '0.8rem' : '1.25rem', fontWeight: 900, color: '#fff' }}>{stats.lap}/{stats.totalLaps}</span>
+                                    <span style={{ color: '#4ade80', fontWeight: 900, fontSize: effectiveIsMobile ? '0.6rem' : '0.7rem', textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>LAP</span>
+                                    <span style={{ fontSize: effectiveIsMobile ? '0.8rem' : '1.25rem', fontWeight: 900, color: '#fff' }}>{stats.lap}/{stats.totalLaps}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Mini Map - Enlarge for Mobile with Minimize capability */}
                         <div
-                            onClick={() => isMobile && setMiniMapMinimized(!miniMapMinimized)}
+                            onClick={() => effectiveIsMobile && setMiniMapMinimized(!miniMapMinimized)}
                             style={{
                                 position: 'relative',
                                 pointerEvents: 'auto',
-                                alignSelf: isMobile ? 'flex-end' : 'auto',
+                                alignSelf: effectiveIsMobile ? 'flex-end' : 'auto',
                                 cursor: 'pointer',
                                 transition: 'all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
                                 zIndex: 300
@@ -1969,22 +1992,22 @@ export default function GameSpeedPage() {
                             <div style={{
                                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
                                 backdropFilter: 'blur(10px)',
-                                padding: isMobile ? '0.2rem' : '0.4rem',
-                                borderRadius: isMobile ? '0.6rem' : '1rem',
+                                padding: effectiveIsMobile ? '0.2rem' : '0.4rem',
+                                borderRadius: effectiveIsMobile ? '0.6rem' : '1rem',
                                 border: '1px solid rgba(255, 255, 255, 0.1)',
-                                transform: isMobile ? (miniMapMinimized ? 'scale(0.3)' : 'scale(0.85)') : 'none',
+                                transform: effectiveIsMobile ? (miniMapMinimized ? 'scale(0.3)' : 'scale(0.85)') : 'none',
                                 transformOrigin: 'top right',
-                                marginTop: isMobile ? '0.5rem' : '0',
-                                marginRight: isMobile ? '0.5rem' : '0',
+                                marginTop: effectiveIsMobile ? '0.5rem' : '0',
+                                marginRight: effectiveIsMobile ? '0.5rem' : '0',
                                 position: 'relative',
                                 transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
                             }}>
                                 <canvas
                                     ref={miniMapRef}
-                                    style={{ borderRadius: isMobile ? '0.4rem' : '0.75rem', display: 'block' }}
+                                    style={{ borderRadius: effectiveIsMobile ? '0.4rem' : '0.75rem', display: 'block' }}
                                 />
 
-                                {isMobile && (
+                                {effectiveIsMobile && (
                                     <div style={{
                                         position: 'absolute',
                                         bottom: '-5px',
@@ -2011,10 +2034,10 @@ export default function GameSpeedPage() {
                     </div>
 
                     {/* Footer: Controls */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%', pointerEvents: 'none', paddingBottom: isMobile ? '2rem' : '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%', pointerEvents: 'none', paddingBottom: effectiveIsMobile ? '2rem' : '1rem' }}>
 
-                        {/* Mobile: Swipe Indicator + Left Controls (NOS on left for thumb) */}
-                        {isMobile ? (
+                        {/* Mobile UI Controls */}
+                        {effectiveIsMobile ? (
                             <>
                                 {/* Left side - NOS Button */}
                                 <div style={{ display: 'flex', gap: '0.75rem', pointerEvents: 'auto' }}>
@@ -2075,7 +2098,7 @@ export default function GameSpeedPage() {
                                 </div>
                             </>
                         ) : (
-                            /* PC: Original controls with steering buttons and GO */
+                            /* PC UI / Forced Landscape: Original controls with steering buttons and GO */
                             <>
                                 {/* Steering Controls - Compact Round */}
                                 <div style={{ display: 'flex', gap: '0.75rem', pointerEvents: 'auto' }}>
@@ -2153,7 +2176,7 @@ export default function GameSpeedPage() {
                                         onTouchStart={(e) => { e.preventDefault(); state.current.keyFaster = true; }}
                                         onTouchEnd={(e) => { e.preventDefault(); state.current.keyFaster = false; }}
                                         onMouseDown={() => { state.current.keyFaster = true; }}
-                                        onMouseUp={() => { state.current.keyFaster = false; }}
+                                        onMouseUp={() => { setGameState('playing'); state.current.keyFaster = false; }}
                                         onMouseLeave={() => { state.current.keyFaster = false; }}
                                     >
                                         <span style={{ filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>GO</span>
@@ -2180,6 +2203,71 @@ export default function GameSpeedPage() {
                                 </div>
                             </>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Orientation Picker Overlay for Mobile */}
+            {mounted && assetsLoaded && showOrientationPicker && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 3000, backgroundColor: '#020617', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', fontFamily: 'var(--font-rajdhani)' }}>
+                    <h2 style={{ color: '#fff', fontSize: '2rem', fontWeight: 900, marginBottom: '1rem', fontStyle: 'italic' }}>SELECT INTERFACE</h2>
+                    <p style={{ color: '#60a5fa', fontSize: '0.8rem', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '3rem' }}>Orientation Strategy</p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', width: '100%', maxWidth: '400px' }}>
+                        <button
+                            onClick={() => {
+                                setShowOrientationPicker(false);
+                                setAssetsLoaded(true); // Assets are loaded, now show game
+                            }}
+                            style={{
+                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '1.5rem',
+                                padding: '2rem 1rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '1rem',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <span style={{ fontSize: '2.5rem' }}>📱</span>
+                            <span style={{ color: 'white', fontWeight: 900 }}>PORTRAIT</span>
+                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem' }}>DRIVE AUTOMATIC</span>
+                        </button>
+
+                        <button
+                            onClick={async () => {
+                                setForcedLandscape(true);
+                                setShowOrientationPicker(false);
+                                setAssetsLoaded(true); // Assets are loaded, now show game
+                                // Attempt full screen and orientation lock
+                                try {
+                                    if (document.documentElement.requestFullscreen) {
+                                        await document.documentElement.requestFullscreen();
+                                    }
+                                    if (screen.orientation && (screen.orientation as any).lock) {
+                                        await (screen.orientation as any).lock('landscape');
+                                    }
+                                } catch (e) { console.log("Orientation lock failed:", e); }
+                            }}
+                            style={{
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                border: '2px solid #3b82f6',
+                                borderRadius: '1.5rem',
+                                padding: '2rem 1rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '1rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
+                            }}
+                        >
+                            <span style={{ fontSize: '2.5rem' }}>📺</span>
+                            <span style={{ color: 'white', fontWeight: 900 }}>LANDSCAPE</span>
+                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem' }}>PC INTERFACE</span>
+                        </button>
                     </div>
                 </div>
             )}
