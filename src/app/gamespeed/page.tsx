@@ -2126,19 +2126,28 @@ export default function GameSpeedPage() {
             {/* Preparation Overlay - Citynight Premium Style */}
             {mounted && gameState === 'preparation' && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.9)', color: 'white', fontFamily: 'var(--font-rajdhani)' }}>
-                    <div style={{ backgroundColor: '#0f172a', padding: '3.5rem', borderRadius: '2rem', border: '2px solid #3b82f6', textAlign: 'center', boxShadow: '0 0 60px rgba(59, 130, 246, 0.3)', maxWidth: '38rem', width: '90%' }}>
-                        <div style={{ fontSize: '6rem', marginBottom: '1rem' }}>🏁</div>
-                        <h1 style={{ fontSize: '4rem', fontWeight: 950, fontStyle: 'italic', marginBottom: '0.5rem', color: '#fff' }}>GET READY!</h1>
-                        <p style={{ color: '#3b82f6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4em', marginBottom: '3rem' }}>City Night Protocol Active</p>
+                    <div style={{
+                        backgroundColor: '#0f172a',
+                        padding: isMobile ? '1.5rem' : '3.5rem',
+                        borderRadius: isMobile ? '1.5rem' : '2rem',
+                        border: '2px solid #3b82f6',
+                        textAlign: 'center',
+                        boxShadow: '0 0 60px rgba(59, 130, 246, 0.3)',
+                        maxWidth: '38rem',
+                        width: '90%'
+                    }}>
+                        <div style={{ fontSize: isMobile ? '3rem' : '6rem', marginBottom: '0.5rem' }}>🏁</div>
+                        <h1 style={{ fontSize: isMobile ? '2.5rem' : '4rem', fontWeight: 950, fontStyle: 'italic', marginBottom: '0.25rem', color: '#fff' }}>GET READY!</h1>
+                        <p style={{ color: '#3b82f6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4em', marginBottom: isMobile ? '1.5rem' : '3rem', fontSize: isMobile ? '0.7rem' : '1rem' }}>City Night Protocol Active</p>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
-                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Distance</div>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#3b82f6' }}>{stats.totalLaps} LAPS</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: isMobile ? '0.75rem' : '1.5rem', marginBottom: isMobile ? '1.5rem' : '3rem' }}>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.25rem' }}>Distance</div>
+                                <div style={{ fontSize: isMobile ? '1.5rem' : '2.5rem', fontWeight: 900, color: '#3b82f6' }}>{stats.totalLaps} LAPS</div>
                             </div>
-                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Nitro Fuel</div>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#10b981' }}>{stats.nos}%</div>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.25rem' }}>Nitro Fuel</div>
+                                <div style={{ fontSize: isMobile ? '1.5rem' : '2.5rem', fontWeight: 900, color: '#10b981' }}>{stats.nos}%</div>
                             </div>
                         </div>
 
@@ -2158,15 +2167,15 @@ export default function GameSpeedPage() {
                             }}
                             style={{
                                 width: '100%',
-                                padding: '1.75rem 0',
+                                padding: isMobile ? '1.25rem 0' : '1.75rem 0',
                                 background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                                 color: '#fff',
-                                borderRadius: '1.5rem',
+                                borderRadius: '1.25rem',
                                 fontWeight: 900,
-                                fontSize: '1.75rem',
+                                fontSize: isMobile ? '1.25rem' : '1.75rem',
                                 cursor: 'pointer',
                                 border: '2px solid rgba(255, 255, 255, 0.3)',
-                                boxShadow: '0 0 50px rgba(59, 130, 246, 0.5)'
+                                boxShadow: '0 0 30px rgba(59, 130, 246, 0.4)'
                             }}
                         >
                             START ENGINE
@@ -2180,10 +2189,10 @@ export default function GameSpeedPage() {
                 <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' }}>
                     <div style={{ position: 'relative' }}>
                         <div style={{
-                            fontSize: '20rem',
+                            fontSize: isMobile ? '10rem' : '20rem',
                             fontWeight: 900,
                             color: 'white',
-                            textShadow: '0 0 80px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.6), 0 10px 50px rgba(0, 0, 0, 0.5)',
+                            textShadow: isMobile ? '0 0 40px rgba(255, 255, 255, 1)' : '0 0 80px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.6), 0 10px 50px rgba(0, 0, 0, 0.5)',
                             animation: 'countdown-scale 1s infinite cubic-bezier(0.18, 0.89, 0.32, 1.28)'
                         }}>
                             {countdown > 0 ? countdown : 'GO'}
@@ -2197,8 +2206,8 @@ export default function GameSpeedPage() {
                 <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.95)' }}>
                     <div style={{
                         backgroundColor: '#0f172a',
-                        padding: '3rem',
-                        borderRadius: '2.5rem',
+                        padding: isMobile ? '2rem' : '3rem',
+                        borderRadius: isMobile ? '1.5rem' : '2.5rem',
                         textAlign: 'center',
                         boxShadow: '0 0 60px rgba(59, 130, 246, 0.4)',
                         maxWidth: '35rem',
@@ -2207,18 +2216,18 @@ export default function GameSpeedPage() {
                         fontFamily: 'var(--font-rajdhani)',
                         border: '2px solid #3b82f6'
                     }}>
-                        <div style={{ fontSize: '5rem', marginBottom: '1.5rem' }}>🏆</div>
-                        <h1 style={{ fontSize: '4rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.5rem', background: 'linear-gradient(to bottom, #fff, #fbbf24)', WebkitBackgroundClip: 'text', color: 'transparent' }}>MISSION CLEAR</h1>
-                        <p style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: '3rem' }}>Racing Protocol: Complete</p>
+                        <div style={{ fontSize: isMobile ? '3rem' : '5rem', marginBottom: '1rem' }}>🏆</div>
+                        <h1 style={{ fontSize: isMobile ? '2rem' : '4rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.5rem', background: 'linear-gradient(to bottom, #fff, #fbbf24)', WebkitBackgroundClip: 'text', color: 'transparent' }}>MISSION CLEAR</h1>
+                        <p style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: isMobile ? '1.5rem' : '3rem', fontSize: isMobile ? '0.7rem' : '1rem' }}>Racing Protocol: Complete</p>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
-                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                <div style={{ fontSize: '0.75rem', color: '#fbbf24', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Grade Points</div>
-                                <div style={{ fontSize: '3rem', fontWeight: 900 }}>100</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: isMobile ? '0.75rem' : '1.5rem', marginBottom: isMobile ? '1.5rem' : '3rem' }}>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.65rem', color: '#fbbf24', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.25rem' }}>Grade Points</div>
+                                <div style={{ fontSize: isMobile ? '2rem' : '3rem', fontWeight: 900 }}>100</div>
                             </div>
-                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                <div style={{ fontSize: '0.75rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Record Time</div>
-                                <div style={{ fontSize: '3rem', fontWeight: 900 }}>01:24</div>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: isMobile ? '1rem' : '1.5rem', borderRadius: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.65rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.25rem' }}>Record Time</div>
+                                <div style={{ fontSize: isMobile ? '2rem' : '3rem', fontWeight: 900 }}>01:24</div>
                             </div>
                         </div>
 
@@ -2226,13 +2235,13 @@ export default function GameSpeedPage() {
                             onClick={endGame}
                             style={{
                                 width: '100%',
-                                padding: '1.5rem',
+                                padding: isMobile ? '1.25rem' : '1.5rem',
                                 background: 'transparent',
                                 color: '#3b82f6',
                                 border: '2px solid #3b82f6',
-                                borderRadius: '1rem',
+                                borderRadius: '0.75rem',
                                 fontWeight: 900,
-                                fontSize: '1.5rem',
+                                fontSize: isMobile ? '1.25rem' : '1.5rem',
                                 cursor: 'pointer'
                             }}
                         >
