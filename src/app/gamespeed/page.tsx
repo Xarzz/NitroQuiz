@@ -119,25 +119,6 @@ export default function GameSpeedPage() {
     const [mounted, setMounted] = useState(false);
     const [aspectRatio, setAspectRatio] = useState(1); // width/height ratio for responsive sizing
 
-    // Inject meta tags for mobile safe areas
-    useEffect(() => {
-        if (typeof document !== 'undefined') {
-            const viewport = document.querySelector('meta[name="viewport"]');
-            if (viewport) {
-                viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover');
-            }
-
-            const themeColor = document.createElement('meta');
-            themeColor.name = "theme-color";
-            themeColor.content = "#020617";
-            document.head.appendChild(themeColor);
-
-            return () => {
-                if (themeColor.parentNode) document.head.removeChild(themeColor);
-            };
-        }
-    }, []);
-
     // Touch/Swipe refs for mobile controls
     const touchStartX = useRef<number | null>(null);
     const touchCurrentX = useRef<number | null>(null);
@@ -1242,8 +1223,11 @@ export default function GameSpeedPage() {
             const bgH = bg.height;
 
             // 1. Scale to cover screen with extra width for movement
-            // Mengembalikan ke zoom awal (1.3) tapi memastikan menutupi lebar
-            const layerScale = (width / bgW) * 1.3;
+            // Increased scale for mobile portrait (9:16) to prevent top gaps
+            const extraParallax = isMobile ? 2.0 : 1.3;
+            const scaleX = (width / bgW) * extraParallax;
+            const scaleY = (height / bgH) * (isMobile ? 1.2 : 1.0); // Extra height buffer for mobile
+            const layerScale = Math.max(scaleX, scaleY);
 
             const scaledW = bgW * layerScale;
             const scaledH = bgH * layerScale;
@@ -1257,12 +1241,21 @@ export default function GameSpeedPage() {
             state.current.bgOffset = Util.limit(state.current.bgOffset, -maxAllowedFactor, maxAllowedFactor);
 
             // 4. Position and Render
-            // "Keatasin" - Anchor ke top (0) agar langit penuh ke atas tanpa perlu zoom tinggi
+            // On mobile, anchor to top (0) to ensure sky covers the status bar area
             const finalScrollX = ((width - scaledW) / 2) - (state.current.bgOffset * scaledW);
             const finalScrollY = isMobile ? 0 : (height - scaledH) / 2;
 
             ctx.save();
             ctx.drawImage(bg, finalScrollX, finalScrollY, scaledW, scaledH);
+
+            // Add a subtle top gradient to blend with browser chrome/status bar on mobile
+            if (isMobile) {
+                const gradient = ctx.createLinearGradient(0, 0, 0, 100);
+                gradient.addColorStop(0, 'rgba(2, 6, 23, 1)'); // Use COLORS.SKY
+                gradient.addColorStop(1, 'rgba(2, 6, 23, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, 100);
+            }
             ctx.restore();
         }
 
@@ -1774,7 +1767,7 @@ export default function GameSpeedPage() {
         <div style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: '#000000', // Pure black background
+            backgroundColor: '#020617',
             overflow: 'hidden',
             userSelect: 'none',
             WebkitUserSelect: 'none',
@@ -1800,315 +1793,297 @@ export default function GameSpeedPage() {
                         color: 'white'
                     }}
                 >
-                    {/* Indikator disembunyikan sementara (Catatan) 
-                    
-                    {mounted && (
-                        <>
-                            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'center' : 'start', width: '100%', gap: '1rem' }}>
-                                ... (HUD ATAS) ...
-                            </div>
-                        </>
-                    )}
-                    
-                    */}
-                </div>
 
                     {/* Header: Stats & Map */}
-            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'center' : 'start', width: '100%', gap: '1rem' }}>
-                {/* Velocity & Points - Premium Glassmorphism */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: isMobile ? '100%' : 'auto' }}>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-                        <div style={isMobile ? {
-                            textAlign: 'center',
-                            flex: 1,
-                            textShadow: '0 0 20px rgba(0,0,0,0.8)'
-                        } : {
-                            backgroundColor: 'rgba(7, 10, 15, 0.9)',
-                            backdropFilter: 'blur(20px)',
-                            padding: '1.5rem 2.5rem',
-                            borderRadius: '2rem',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.6)'
-                        }}>
-                            {!isMobile && <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.25rem' }}>Speedometer</div>}
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-                                <span style={{
-                                    fontSize: isMobile ? '3.5rem' : '4.5rem',
-                                    fontWeight: 900,
-                                    fontFamily: 'var(--font-rajdhani)',
-                                    color: '#fff',
-                                    fontStyle: 'italic',
-                                    textShadow: '0 0 20px rgba(255,255,255,0.7), 0 0 40px rgba(59, 130, 246, 0.8), 2px 2px 0px rgba(0,0,0,0.5)'
+                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'center' : 'start', width: '100%', gap: '1rem' }}>
+                        {/* Velocity & Points - Premium Glassmorphism */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: isMobile ? '100%' : 'auto' }}>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                                <div style={{
+                                    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                                    backdropFilter: 'blur(15px)',
+                                    padding: isMobile ? '0.75rem 1rem' : '1.5rem 2.5rem',
+                                    borderRadius: isMobile ? '1.5rem' : '2rem',
+                                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                                    flex: isMobile ? 1 : 'none',
+                                    textAlign: isMobile ? 'center' : 'left'
                                 }}>
-                                    {stats.speed}
-                                </span>
-                                <span style={{ fontSize: isMobile ? '1rem' : '1rem', color: '#60a5fa', fontWeight: 800 }}>KPH</span>
+                                    <div style={{ fontSize: isMobile ? '9px' : '10px', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.25rem' }}>Speedometer</div>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                                        <span style={{
+                                            fontSize: isMobile ? '2.5rem' : '4.5rem',
+                                            fontWeight: 900,
+                                            fontFamily: 'var(--font-rajdhani)',
+                                            color: '#fff',
+                                            fontStyle: 'italic',
+                                            textShadow: '0 0 20px rgba(255,255,255,0.7), 0 0 40px rgba(59, 130, 246, 0.5)'
+                                        }}>
+                                            {stats.speed}
+                                        </span>
+                                        <span style={{ fontSize: isMobile ? '0.8rem' : '1rem', color: '#60a5fa', fontWeight: 800 }}>KPH</span>
+                                    </div>
+                                </div>
+
+                                {/* POV Toggle - User Friendly Mobile Optimization */}
+                                <button
+                                    onClick={() => {
+                                        const next = state.current.viewMode === 'first' ? 'third' : 'first';
+                                        state.current.viewMode = next;
+                                        setViewMode(next);
+                                    }}
+                                    style={{
+                                        pointerEvents: 'auto',
+                                        backgroundColor: 'rgba(59, 130, 246, 0.25)',
+                                        backdropFilter: 'blur(15px)',
+                                        width: isMobile ? '3.5rem' : '5rem',
+                                        height: isMobile ? '3.5rem' : '5rem',
+                                        borderRadius: '1.25rem',
+                                        border: '2px solid rgba(59, 130, 246, 0.5)',
+                                        color: 'white',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        transition: 'all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
+                                        gap: '2px'
+                                    }}
+                                >
+                                    <span style={{ fontSize: isMobile ? '1.2rem' : '1.8rem', filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}>
+                                        {viewMode === 'first' ? '🎥' : '👤'}
+                                    </span>
+                                    {!isMobile && <span style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', opacity: 0.8 }}>POV (T)</span>}
+                                </button>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '0.5rem', width: isMobile ? '100%' : 'auto' }}>
+                                <div style={{
+                                    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                                    backdropFilter: 'blur(15px)',
+                                    padding: '0.6rem 1rem',
+                                    borderRadius: '1.25rem',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.75rem',
+                                    flex: isMobile ? 1 : 'none'
+                                }}>
+                                    <span style={{ color: '#60a5fa', fontWeight: 900, fontSize: '0.7rem', textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}>NOS</span>
+                                    <div style={{ flex: 1, minWidth: isMobile ? '40px' : '80px', height: '6px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                                        <div style={{ width: `${stats.nos}%`, height: '100%', backgroundColor: '#3b82f6', boxShadow: '0 0 10px #3b82f6' }} />
+                                    </div>
+                                </div>
+                                <div style={{
+                                    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                                    backdropFilter: 'blur(15px)',
+                                    padding: '0.6rem 1rem',
+                                    borderRadius: '1.25rem',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    flex: isMobile ? 'none' : 'none'
+                                }}>
+                                    <span style={{ color: '#4ade80', fontWeight: 900, fontSize: '0.7rem', textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>LAP</span>
+                                    <span style={{ fontSize: isMobile ? '1rem' : '1.25rem', fontWeight: 900, color: '#fff' }}>{stats.lap}/{stats.totalLaps}</span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* POV Toggle - User Friendly Mobile Optimization */}
-                        <button
-                            onClick={() => {
-                                const next = state.current.viewMode === 'first' ? 'third' : 'first';
-                                state.current.viewMode = next;
-                                setViewMode(next);
-                            }}
-                            style={{
-                                pointerEvents: 'auto',
-                                backgroundColor: isMobile ? 'transparent' : 'rgba(59, 130, 246, 0.25)',
-                                backdropFilter: isMobile ? 'none' : 'blur(15px)',
-                                width: isMobile ? '3.5rem' : '5rem',
-                                height: isMobile ? '3.5rem' : '5rem',
-                                borderRadius: '1.25rem',
-                                border: isMobile ? 'none' : '2px solid rgba(59, 130, 246, 0.5)',
-                                color: 'white',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'all 0.2s',
-                                gap: '2px',
-                                textShadow: isMobile ? '0 0 10px rgba(0,0,0,0.8)' : 'none'
-                            }}
-                        >
-                            <span style={{ fontSize: isMobile ? '1.8rem' : '1.8rem', filter: 'drop-shadow(0 0 8px rgba(0,0,0,1))' }}>
-                                {viewMode === 'first' ? '🎥' : '👤'}
-                            </span>
-                            {!isMobile && <span style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', opacity: 0.8 }}>POV (T)</span>}
-                        </button>
+                        {/* Mini Map - Visible on both PC and Mobile */}
+                        <div style={{ position: 'relative', pointerEvents: 'auto' }}>
+                            <div style={{
+                                backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                                backdropFilter: 'blur(10px)',
+                                padding: isMobile ? '0.25rem' : '0.4rem',
+                                borderRadius: isMobile ? '0.75rem' : '1rem',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                transform: isMobile ? 'scale(0.6)' : 'none',
+                                transformOrigin: 'top right',
+                            }}>
+                                <canvas
+                                    ref={miniMapRef}
+                                    style={{ borderRadius: isMobile ? '0.5rem' : '0.75rem', display: 'block' }}
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.5rem', width: isMobile ? '100%' : 'auto' }}>
-                        <div style={{
-                            backgroundColor: isMobile ? 'transparent' : 'rgba(0, 0, 0, 0.65)',
-                            backdropFilter: isMobile ? 'none' : 'blur(15px)',
-                            padding: isMobile ? '0' : '0.6rem 1rem',
-                            borderRadius: '1.25rem',
-                            border: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.75rem',
-                            flex: isMobile ? 1 : 'none'
-                        }}>
-                            <span style={{ color: '#60a5fa', fontWeight: 900, fontSize: '0.7rem', textShadow: '0 0 10px rgba(0,0,0,1)' }}>NOS</span>
-                            <div style={{ flex: 1, minWidth: isMobile ? '40px' : '80px', height: '8px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden', boxShadow: isMobile ? '0 0 10px rgba(0,0,0,0.5)' : 'none' }}>
-                                <div style={{ width: `${stats.nos}%`, height: '100%', backgroundColor: '#3b82f6', boxShadow: '0 0 15px #3b82f6' }} />
-                            </div>
-                        </div>
-                        <div style={{
-                            backgroundColor: isMobile ? 'transparent' : 'rgba(0, 0, 0, 0.65)',
-                            backdropFilter: isMobile ? 'none' : 'blur(15px)',
-                            padding: isMobile ? '0' : '0.6rem 1rem',
-                            borderRadius: '1.25rem',
-                            border: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            flex: 'none'
-                        }}>
-                            <span style={{ color: '#4ade80', fontWeight: 900, fontSize: '0.7rem', textShadow: '0 0 10px rgba(0,0,0,1)' }}>LAP</span>
-                            <span style={{ fontSize: isMobile ? '1.2rem' : '1.25rem', fontWeight: 900, color: '#fff', textShadow: isMobile ? '0 0 10px rgba(0,0,0,0.8)' : 'none' }}>{stats.lap}/{stats.totalLaps}</span>
-                        </div>
+                    {/* Footer: Controls */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%', pointerEvents: 'none', paddingBottom: isMobile ? '2rem' : '1rem' }}>
+
+                        {/* Mobile: Swipe Indicator + Left Controls (NOS on left for thumb) */}
+                        {isMobile ? (
+                            <>
+                                {/* Left side - NOS Button */}
+                                <div style={{ display: 'flex', gap: '0.75rem', pointerEvents: 'auto' }}>
+                                    <button
+                                        style={{
+                                            width: '5rem', height: '5rem',
+                                            background: stats.nos > 0 ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'rgba(255, 255, 255, 0.05)',
+                                            borderRadius: '50%',
+                                            border: '2px solid rgba(59, 130, 246, 0.5)',
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', opacity: stats.nos > 0 ? 1 : 0.5, color: 'white', fontWeight: 900,
+                                            boxShadow: stats.nos > 0 ? '0 0 20px rgba(59, 130, 246, 0.5)' : 'none',
+                                        }}
+                                        onTouchStart={(e) => { e.preventDefault(); state.current.keyBoost = true; }}
+                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keyBoost = false; }}
+                                    >
+                                        <span style={{ fontSize: '1.5rem', filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>🚀</span>
+                                        <span style={{ fontSize: '0.7rem', marginTop: '2px' }}>NOS</span>
+                                    </button>
+                                </div>
+
+                                {/* Center - Swipe Indicator */}
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'rgba(255, 255, 255, 0.5)',
+                                    pointerEvents: 'none'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ fontSize: '1.5rem', opacity: state.current.keyLeft ? 1 : 0.3 }}>👈</span>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Swipe to Steer</span>
+                                        <span style={{ fontSize: '1.5rem', opacity: state.current.keyRight ? 1 : 0.3 }}>👉</span>
+                                    </div>
+                                </div>
+
+                                {/* Right side - Brake Button */}
+                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', pointerEvents: 'auto' }}>
+                                    <button
+                                        style={{
+                                            width: '5rem', height: '5rem',
+                                            backgroundColor: state.current.keySlower ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.15)',
+                                            backdropFilter: 'blur(8px)',
+                                            borderRadius: '50%',
+                                            border: '2px solid rgba(239, 68, 68, 0.5)',
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', color: '#ef4444', fontWeight: 900,
+                                            textShadow: '0 0 8px rgba(239, 68, 68, 0.8)',
+                                            boxShadow: state.current.keySlower ? '0 0 20px rgba(239, 68, 68, 0.5)' : 'none',
+                                        }}
+                                        onTouchStart={(e) => { e.preventDefault(); state.current.keySlower = true; }}
+                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keySlower = false; }}
+                                    >
+                                        <span style={{ fontSize: '1.5rem' }}>🛑</span>
+                                        <span style={{ fontSize: '0.7rem', marginTop: '2px' }}>BRAKE</span>
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            /* PC: Original controls with steering buttons and GO */
+                            <>
+                                {/* Steering Controls - Compact Round */}
+                                <div style={{ display: 'flex', gap: '0.75rem', pointerEvents: 'auto' }}>
+                                    <button
+                                        style={{
+                                            width: '5rem', height: '5rem',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                            backdropFilter: 'blur(10px)',
+                                            borderRadius: '50%',
+                                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', outline: 'none',
+                                        }}
+                                        onTouchStart={(e) => { e.preventDefault(); state.current.keyLeft = true; }}
+                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keyLeft = false; }}
+                                        onMouseDown={() => { state.current.keyLeft = true; }}
+                                        onMouseUp={() => { state.current.keyLeft = false; }}
+                                        onMouseLeave={() => { state.current.keyLeft = false; }}
+                                    >
+                                        <span style={{ fontSize: '1.25rem', color: 'white', filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>◀</span>
+                                    </button>
+                                    <button
+                                        style={{
+                                            width: '5rem', height: '5rem',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                            backdropFilter: 'blur(10px)',
+                                            borderRadius: '50%',
+                                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', outline: 'none',
+                                        }}
+                                        onTouchStart={(e) => { e.preventDefault(); state.current.keyRight = true; }}
+                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keyRight = false; }}
+                                        onMouseDown={() => { state.current.keyRight = true; }}
+                                        onMouseUp={() => { state.current.keyRight = false; }}
+                                        onMouseLeave={() => { state.current.keyRight = false; }}
+                                    >
+                                        <span style={{ fontSize: '1.25rem', color: 'white', filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>▶</span>
+                                    </button>
+                                </div>
+
+                                {/* Right Controls (Action) */}
+                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', pointerEvents: 'auto' }}>
+                                    {/* Brake Button - Compact */}
+                                    <button
+                                        style={{
+                                            width: '4.5rem', height: '4.5rem',
+                                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                            backdropFilter: 'blur(8px)',
+                                            borderRadius: '50%',
+                                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', color: '#ef4444', fontWeight: 900, fontSize: '0.6rem',
+                                            textShadow: '0 0 8px rgba(239, 68, 68, 0.8)'
+                                        }}
+                                        onTouchStart={(e) => { e.preventDefault(); state.current.keySlower = true; }}
+                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keySlower = false; }}
+                                        onMouseDown={() => { state.current.keySlower = true; }}
+                                        onMouseUp={() => { state.current.keySlower = false; }}
+                                        onMouseLeave={() => { state.current.keySlower = false; }}
+                                    >
+                                        STOP
+                                    </button>
+
+                                    {/* Gas Button - Compact Circle */}
+                                    <button
+                                        style={{
+                                            width: '7.5rem', height: '7.5rem',
+                                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                            borderRadius: '50%',
+                                            border: '3px solid rgba(255, 255, 255, 0.1)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', color: 'white', fontWeight: 900, fontSize: '1.25rem',
+                                        }}
+                                        onTouchStart={(e) => { e.preventDefault(); state.current.keyFaster = true; }}
+                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keyFaster = false; }}
+                                        onMouseDown={() => { state.current.keyFaster = true; }}
+                                        onMouseUp={() => { state.current.keyFaster = false; }}
+                                        onMouseLeave={() => { state.current.keyFaster = false; }}
+                                    >
+                                        <span style={{ filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>GO</span>
+                                    </button>
+
+                                    {/* NOS Button - Compact */}
+                                    <button
+                                        style={{
+                                            width: '5rem', height: '5rem',
+                                            background: stats.nos > 0 ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'rgba(255, 255, 255, 0.05)',
+                                            borderRadius: '50%',
+                                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', opacity: stats.nos > 0 ? 1 : 0.5, color: 'white', fontWeight: 900,
+                                        }}
+                                        onTouchStart={(e) => { e.preventDefault(); state.current.keyBoost = true; }}
+                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keyBoost = false; }}
+                                        onMouseDown={() => { state.current.keyBoost = true; }}
+                                        onMouseUp={() => { state.current.keyBoost = false; }}
+                                        onMouseLeave={() => { state.current.keyBoost = false; }}
+                                    >
+                                        <span style={{ filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>NOS</span>
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
+            )}
 
-                {/* Mini Map - Visible on both PC and Mobile */}
-                <div style={{ position: 'relative', pointerEvents: 'auto' }}>
-                    <div style={{
-                        backgroundColor: isMobile ? 'transparent' : 'rgba(7, 10, 15, 0.9)',
-                        backdropFilter: isMobile ? 'none' : 'blur(10px)',
-                        padding: isMobile ? '0' : '0.4rem',
-                        borderRadius: isMobile ? '0' : '1rem',
-                        border: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
-                        transform: isMobile ? 'scale(0.8)' : 'none',
-                        transformOrigin: 'top right',
-                        filter: isMobile ? 'drop-shadow(0 0 10px rgba(0,0,0,1))' : 'none'
-                    }}>
-                        <canvas
-                            ref={miniMapRef}
-                            style={{ borderRadius: isMobile ? '0.5rem' : '0.75rem', display: 'block' }}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Footer: Controls */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%', pointerEvents: 'none', paddingBottom: isMobile ? '2rem' : '1rem' }}>
-
-                {/* Mobile: Swipe Indicator + Left Controls (NOS on left for thumb) */}
-                {isMobile ? (
-                    <>
-                        {/* Left side - NOS Button */}
-                        <div style={{ display: 'flex', gap: '0.75rem', pointerEvents: 'auto' }}>
-                            <button
-                                style={{
-                                    width: '5rem', height: '5rem',
-                                    background: stats.nos > 0 ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'rgba(255, 255, 255, 0.05)',
-                                    borderRadius: '50%',
-                                    border: '2px solid rgba(59, 130, 246, 0.5)',
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                    cursor: 'pointer', opacity: stats.nos > 0 ? 1 : 0.5, color: 'white', fontWeight: 900,
-                                    boxShadow: stats.nos > 0 ? '0 0 20px rgba(59, 130, 246, 0.5)' : 'none',
-                                }}
-                                onTouchStart={(e) => { e.preventDefault(); state.current.keyBoost = true; }}
-                                onTouchEnd={(e) => { e.preventDefault(); state.current.keyBoost = false; }}
-                            >
-                                <span style={{ fontSize: '1.5rem', filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>🚀</span>
-                                <span style={{ fontSize: '0.7rem', marginTop: '2px' }}>NOS</span>
-                            </button>
-                        </div>
-
-                        {/* Center - Swipe Indicator */}
-                        <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'rgba(255, 255, 255, 0.5)',
-                            pointerEvents: 'none'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '1.5rem', opacity: state.current.keyLeft ? 1 : 0.3 }}>👈</span>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Swipe to Steer</span>
-                                <span style={{ fontSize: '1.5rem', opacity: state.current.keyRight ? 1 : 0.3 }}>👉</span>
-                            </div>
-                        </div>
-
-                        {/* Right side - Brake Button */}
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', pointerEvents: 'auto' }}>
-                            <button
-                                style={{
-                                    width: '5rem', height: '5rem',
-                                    backgroundColor: state.current.keySlower ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.15)',
-                                    backdropFilter: 'blur(8px)',
-                                    borderRadius: '50%',
-                                    border: '2px solid rgba(239, 68, 68, 0.5)',
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                    cursor: 'pointer', color: '#ef4444', fontWeight: 900,
-                                    textShadow: '0 0 8px rgba(239, 68, 68, 0.8)',
-                                    boxShadow: state.current.keySlower ? '0 0 20px rgba(239, 68, 68, 0.5)' : 'none',
-                                }}
-                                onTouchStart={(e) => { e.preventDefault(); state.current.keySlower = true; }}
-                                onTouchEnd={(e) => { e.preventDefault(); state.current.keySlower = false; }}
-                            >
-                                <span style={{ fontSize: '1.5rem' }}>🛑</span>
-                                <span style={{ fontSize: '0.7rem', marginTop: '2px' }}>BRAKE</span>
-                            </button>
-                        </div>
-                    </>
-                ) : (
-                    /* PC: Original controls with steering buttons and GO */
-                    <>
-                        {/* Steering Controls - Compact Round */}
-                        <div style={{ display: 'flex', gap: '0.75rem', pointerEvents: 'auto' }}>
-                            <button
-                                style={{
-                                    width: '5rem', height: '5rem',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                    backdropFilter: 'blur(10px)',
-                                    borderRadius: '50%',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    cursor: 'pointer', outline: 'none',
-                                }}
-                                onTouchStart={(e) => { e.preventDefault(); state.current.keyLeft = true; }}
-                                onTouchEnd={(e) => { e.preventDefault(); state.current.keyLeft = false; }}
-                                onMouseDown={() => { state.current.keyLeft = true; }}
-                                onMouseUp={() => { state.current.keyLeft = false; }}
-                                onMouseLeave={() => { state.current.keyLeft = false; }}
-                            >
-                                <span style={{ fontSize: '1.25rem', color: 'white', filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>◀</span>
-                            </button>
-                            <button
-                                style={{
-                                    width: '5rem', height: '5rem',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                    backdropFilter: 'blur(10px)',
-                                    borderRadius: '50%',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    cursor: 'pointer', outline: 'none',
-                                }}
-                                onTouchStart={(e) => { e.preventDefault(); state.current.keyRight = true; }}
-                                onTouchEnd={(e) => { e.preventDefault(); state.current.keyRight = false; }}
-                                onMouseDown={() => { state.current.keyRight = true; }}
-                                onMouseUp={() => { state.current.keyRight = false; }}
-                                onMouseLeave={() => { state.current.keyRight = false; }}
-                            >
-                                <span style={{ fontSize: '1.25rem', color: 'white', filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>▶</span>
-                            </button>
-                        </div>
-
-                        {/* Right Controls (Action) */}
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', pointerEvents: 'auto' }}>
-                            {/* Brake Button - Compact */}
-                            <button
-                                style={{
-                                    width: '4.5rem', height: '4.5rem',
-                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                    backdropFilter: 'blur(8px)',
-                                    borderRadius: '50%',
-                                    border: '1px solid rgba(239, 68, 68, 0.3)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    cursor: 'pointer', color: '#ef4444', fontWeight: 900, fontSize: '0.6rem',
-                                    textShadow: '0 0 8px rgba(239, 68, 68, 0.8)'
-                                }}
-                                onTouchStart={(e) => { e.preventDefault(); state.current.keySlower = true; }}
-                                onTouchEnd={(e) => { e.preventDefault(); state.current.keySlower = false; }}
-                                onMouseDown={() => { state.current.keySlower = true; }}
-                                onMouseUp={() => { state.current.keySlower = false; }}
-                                onMouseLeave={() => { state.current.keySlower = false; }}
-                            >
-                                STOP
-                            </button>
-
-                            {/* Gas Button - Compact Circle */}
-                            <button
-                                style={{
-                                    width: '7.5rem', height: '7.5rem',
-                                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                    borderRadius: '50%',
-                                    border: '3px solid rgba(255, 255, 255, 0.1)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    cursor: 'pointer', color: 'white', fontWeight: 900, fontSize: '1.25rem',
-                                }}
-                                onTouchStart={(e) => { e.preventDefault(); state.current.keyFaster = true; }}
-                                onTouchEnd={(e) => { e.preventDefault(); state.current.keyFaster = false; }}
-                                onMouseDown={() => { state.current.keyFaster = true; }}
-                                onMouseUp={() => { state.current.keyFaster = false; }}
-                                onMouseLeave={() => { state.current.keyFaster = false; }}
-                            >
-                                <span style={{ filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>GO</span>
-                            </button>
-
-                            {/* NOS Button - Compact */}
-                            <button
-                                style={{
-                                    width: '5rem', height: '5rem',
-                                    background: stats.nos > 0 ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'rgba(255, 255, 255, 0.05)',
-                                    borderRadius: '50%',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    cursor: 'pointer', opacity: stats.nos > 0 ? 1 : 0.5, color: 'white', fontWeight: 900,
-                                }}
-                                onTouchStart={(e) => { e.preventDefault(); state.current.keyBoost = true; }}
-                                onTouchEnd={(e) => { e.preventDefault(); state.current.keyBoost = false; }}
-                                onMouseDown={() => { state.current.keyBoost = true; }}
-                                onMouseUp={() => { state.current.keyBoost = false; }}
-                                onMouseLeave={() => { state.current.keyBoost = false; }}
-                            >
-                                <span style={{ filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>NOS</span>
-                            </button>
-                        </div>
-                    </>
-                )}
-            </div>
-        </div>
-    )
-}
-
-<style jsx global>{`
+            <style jsx global>{`
                 @keyframes countdown-scale {
                     0% { transform: scale(0.8); opacity: 0; }
                     50% { transform: scale(1.1); opacity: 1; }
@@ -2116,130 +2091,124 @@ export default function GameSpeedPage() {
                 }
             `}</style>
 
-{/* Preparation Overlay - Citynight Premium Style */ }
-{
-    mounted && gameState === 'preparation' && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.9)', color: 'white', fontFamily: 'var(--font-rajdhani)' }}>
-            <div style={{ backgroundColor: '#0f172a', padding: '3.5rem', borderRadius: '2rem', border: '2px solid #3b82f6', textAlign: 'center', boxShadow: '0 0 60px rgba(59, 130, 246, 0.3)', maxWidth: '38rem', width: '90%' }}>
-                <div style={{ fontSize: '6rem', marginBottom: '1rem' }}>🏁</div>
-                <h1 style={{ fontSize: '4rem', fontWeight: 950, fontStyle: 'italic', marginBottom: '0.5rem', color: '#fff' }}>GET READY!</h1>
-                <p style={{ color: '#3b82f6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4em', marginBottom: '3rem' }}>City Night Protocol Active</p>
+            {/* Preparation Overlay - Citynight Premium Style */}
+            {mounted && gameState === 'preparation' && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.9)', color: 'white', fontFamily: 'var(--font-rajdhani)' }}>
+                    <div style={{ backgroundColor: '#0f172a', padding: '3.5rem', borderRadius: '2rem', border: '2px solid #3b82f6', textAlign: 'center', boxShadow: '0 0 60px rgba(59, 130, 246, 0.3)', maxWidth: '38rem', width: '90%' }}>
+                        <div style={{ fontSize: '6rem', marginBottom: '1rem' }}>🏁</div>
+                        <h1 style={{ fontSize: '4rem', fontWeight: 950, fontStyle: 'italic', marginBottom: '0.5rem', color: '#fff' }}>GET READY!</h1>
+                        <p style={{ color: '#3b82f6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4em', marginBottom: '3rem' }}>City Night Protocol Active</p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
-                    <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Distance</div>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#3b82f6' }}>{stats.totalLaps} LAPS</div>
-                    </div>
-                    <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Nitro Fuel</div>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#10b981' }}>{stats.nos}%</div>
-                    </div>
-                </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Distance</div>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#3b82f6' }}>{stats.totalLaps} LAPS</div>
+                            </div>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.4)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Nitro Fuel</div>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#10b981' }}>{stats.nos}%</div>
+                            </div>
+                        </div>
 
-                <button
-                    onClick={() => {
-                        setGameState('countdown');
-                        let count = 5;
-                        setCountdown(count);
-                        const interval = setInterval(() => {
-                            count--;
-                            setCountdown(count);
-                            if (count <= 0) {
-                                clearInterval(interval);
-                                setTimeout(() => { setGameState('playing'); }, 500);
-                            }
-                        }, 1000);
-                    }}
-                    style={{
-                        width: '100%',
-                        padding: '1.75rem 0',
-                        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                        color: '#fff',
-                        borderRadius: '1.5rem',
-                        fontWeight: 900,
-                        fontSize: '1.75rem',
-                        cursor: 'pointer',
-                        border: '2px solid rgba(255, 255, 255, 0.3)',
-                        boxShadow: '0 0 50px rgba(59, 130, 246, 0.5)'
-                    }}
-                >
-                    START ENGINE
-                </button>
-            </div>
-        </div>
-    )
-}
-
-{/* Countdown Overlay - Clean Elegant Style */ }
-{
-    mounted && gameState === 'countdown' && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' }}>
-            <div style={{ position: 'relative' }}>
-                <div style={{
-                    fontSize: '20rem',
-                    fontWeight: 900,
-                    color: 'white',
-                    textShadow: '0 0 80px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.6), 0 10px 50px rgba(0, 0, 0, 0.5)',
-                    animation: 'countdown-scale 1s infinite cubic-bezier(0.18, 0.89, 0.32, 1.28)'
-                }}>
-                    {countdown > 0 ? countdown : 'GO'}
-                </div>
-            </div>
-        </div>
-    )
-}
-
-{/* Victory Overlay - Premium Modern Style */ }
-{
-    mounted && gameState === 'finished' && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.95)' }}>
-            <div style={{
-                backgroundColor: '#0f172a',
-                padding: '3rem',
-                borderRadius: '2.5rem',
-                textAlign: 'center',
-                boxShadow: '0 0 60px rgba(59, 130, 246, 0.4)',
-                maxWidth: '35rem',
-                width: '90%',
-                color: 'white',
-                fontFamily: 'var(--font-rajdhani)',
-                border: '2px solid #3b82f6'
-            }}>
-                <div style={{ fontSize: '5rem', marginBottom: '1.5rem' }}>🏆</div>
-                <h1 style={{ fontSize: '4rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.5rem', background: 'linear-gradient(to bottom, #fff, #fbbf24)', WebkitBackgroundClip: 'text', color: 'transparent' }}>MISSION CLEAR</h1>
-                <p style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: '3rem' }}>Racing Protocol: Complete</p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
-                    <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                        <div style={{ fontSize: '0.75rem', color: '#fbbf24', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Grade Points</div>
-                        <div style={{ fontSize: '3rem', fontWeight: 900 }}>100</div>
-                    </div>
-                    <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                        <div style={{ fontSize: '0.75rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Record Time</div>
-                        <div style={{ fontSize: '3rem', fontWeight: 900 }}>01:24</div>
+                        <button
+                            onClick={() => {
+                                setGameState('countdown');
+                                let count = 5;
+                                setCountdown(count);
+                                const interval = setInterval(() => {
+                                    count--;
+                                    setCountdown(count);
+                                    if (count <= 0) {
+                                        clearInterval(interval);
+                                        setTimeout(() => { setGameState('playing'); }, 500);
+                                    }
+                                }, 1000);
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: '1.75rem 0',
+                                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                color: '#fff',
+                                borderRadius: '1.5rem',
+                                fontWeight: 900,
+                                fontSize: '1.75rem',
+                                cursor: 'pointer',
+                                border: '2px solid rgba(255, 255, 255, 0.3)',
+                                boxShadow: '0 0 50px rgba(59, 130, 246, 0.5)'
+                            }}
+                        >
+                            START ENGINE
+                        </button>
                     </div>
                 </div>
+            )}
 
-                <button
-                    onClick={endGame}
-                    style={{
-                        width: '100%',
-                        padding: '1.5rem',
-                        background: 'transparent',
-                        color: '#3b82f6',
-                        border: '2px solid #3b82f6',
-                        borderRadius: '1rem',
-                        fontWeight: 900,
-                        fontSize: '1.5rem',
-                        cursor: 'pointer'
-                    }}
-                >
-                    RETURN TO BASE
-                </button>
-            </div>
+            {/* Countdown Overlay - Clean Elegant Style */}
+            {mounted && gameState === 'countdown' && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' }}>
+                    <div style={{ position: 'relative' }}>
+                        <div style={{
+                            fontSize: '20rem',
+                            fontWeight: 900,
+                            color: 'white',
+                            textShadow: '0 0 80px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.6), 0 10px 50px rgba(0, 0, 0, 0.5)',
+                            animation: 'countdown-scale 1s infinite cubic-bezier(0.18, 0.89, 0.32, 1.28)'
+                        }}>
+                            {countdown > 0 ? countdown : 'GO'}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Victory Overlay - Premium Modern Style */}
+            {mounted && gameState === 'finished' && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.95)' }}>
+                    <div style={{
+                        backgroundColor: '#0f172a',
+                        padding: '3rem',
+                        borderRadius: '2.5rem',
+                        textAlign: 'center',
+                        boxShadow: '0 0 60px rgba(59, 130, 246, 0.4)',
+                        maxWidth: '35rem',
+                        width: '90%',
+                        color: 'white',
+                        fontFamily: 'var(--font-rajdhani)',
+                        border: '2px solid #3b82f6'
+                    }}>
+                        <div style={{ fontSize: '5rem', marginBottom: '1.5rem' }}>🏆</div>
+                        <h1 style={{ fontSize: '4rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.5rem', background: 'linear-gradient(to bottom, #fff, #fbbf24)', WebkitBackgroundClip: 'text', color: 'transparent' }}>MISSION CLEAR</h1>
+                        <p style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: '3rem' }}>Racing Protocol: Complete</p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.75rem', color: '#fbbf24', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Grade Points</div>
+                                <div style={{ fontSize: '3rem', fontWeight: 900 }}>100</div>
+                            </div>
+                            <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                <div style={{ fontSize: '0.75rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>Record Time</div>
+                                <div style={{ fontSize: '3rem', fontWeight: 900 }}>01:24</div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={endGame}
+                            style={{
+                                width: '100%',
+                                padding: '1.5rem',
+                                background: 'transparent',
+                                color: '#3b82f6',
+                                border: '2px solid #3b82f6',
+                                borderRadius: '1rem',
+                                fontWeight: 900,
+                                fontSize: '1.5rem',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            RETURN TO BASE
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
-    )
-}
-        </div >
     );
 }
