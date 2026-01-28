@@ -123,6 +123,7 @@ export default function GameSpeedPage() {
     // Touch/Swipe refs for mobile controls
     const touchStartX = useRef<number | null>(null);
     const touchCurrentX = useRef<number | null>(null);
+    const steeringTouchId = useRef<number | null>(null);
     const swipeThreshold = 30; // minimum swipe distance to trigger steer
 
     // Refs for game loop
@@ -1440,65 +1441,83 @@ export default function GameSpeedPage() {
         };
     }, []);
 
-    // Touch/Swipe controls for mobile steering
+    // Touch/Swipe controls for mobile steering (Multi-touch support)
     useEffect(() => {
         const handleTouchStart = (e: TouchEvent) => {
-            // Check if touch is on a button (don't intercept button touches)
-            const target = e.target as HTMLElement;
-            if (target.tagName === 'BUTTON' || target.closest('button')) {
-                return;
-            }
+            // If we're already steering, ignore new touches
+            if (steeringTouchId.current !== null) return;
 
-            if (e.touches.length > 0) {
-                touchStartX.current = e.touches[0].clientX;
-                touchCurrentX.current = e.touches[0].clientX;
-            }
-        };
-
-        const handleTouchMove = (e: TouchEvent) => {
-            // Check if touch is on a button
-            const target = e.target as HTMLElement;
-            if (target.tagName === 'BUTTON' || target.closest('button')) {
-                return;
-            }
-
-            if (e.touches.length > 0 && touchStartX.current !== null) {
-                touchCurrentX.current = e.touches[0].clientX;
-                const deltaX = touchCurrentX.current - touchStartX.current;
-
-                // Calculate analog steering value (-1.0 to 1.0)
-                const maxRange = window.innerWidth / 3;
-                state.current.analogSteer = Util.limit(deltaX / maxRange, -1, 1);
-
-                // Keep boolean state for animation compatibility
-                if (deltaX < -20) {
-                    state.current.keyLeft = true;
-                    state.current.keyRight = false;
-                } else if (deltaX > 20) {
-                    state.current.keyRight = true;
-                    state.current.keyLeft = false;
-                } else {
-                    state.current.keyLeft = false;
-                    state.current.keyRight = false;
+            // Look for a touch that is NOT on a button
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const target = touch.target as HTMLElement;
+                if (!(target.tagName === 'BUTTON' || target.closest('button'))) {
+                    steeringTouchId.current = touch.identifier;
+                    touchStartX.current = touch.clientX;
+                    touchCurrentX.current = touch.clientX;
+                    break;
                 }
             }
         };
 
-        const handleTouchEnd = () => {
-            touchStartX.current = null;
-            touchCurrentX.current = null;
-            state.current.analogSteer = 0;
-            // Reset steering when touch ends
-            state.current.keyLeft = false;
-            state.current.keyRight = false;
+        const handleTouchMove = (e: TouchEvent) => {
+            if (steeringTouchId.current === null) return;
+
+            // Find the touch that started our steering
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                if (touch.identifier === steeringTouchId.current) {
+                    touchCurrentX.current = touch.clientX;
+                    const deltaX = touchCurrentX.current - (touchStartX.current || 0);
+
+                    // Calculate analog steering value (-1.0 to 1.0)
+                    const maxRange = window.innerWidth / 3;
+                    state.current.analogSteer = Util.limit(deltaX / maxRange, -1, 1);
+
+                    // Keep boolean state for animation/logic compatibility
+                    if (deltaX < -20) {
+                        state.current.keyLeft = true;
+                        state.current.keyRight = false;
+                    } else if (deltaX > 20) {
+                        state.current.keyRight = true;
+                        state.current.keyLeft = false;
+                    } else {
+                        state.current.keyLeft = false;
+                        state.current.keyRight = false;
+                    }
+                    break;
+                }
+            }
+        };
+
+        const handleTouchEnd = (e: TouchEvent) => {
+            if (steeringTouchId.current === null) return;
+
+            // Check if our tracked touch ended
+            let mappedTouchEnded = false;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === steeringTouchId.current) {
+                    mappedTouchEnded = true;
+                    break;
+                }
+            }
+
+            if (mappedTouchEnded) {
+                steeringTouchId.current = null;
+                touchStartX.current = null;
+                touchCurrentX.current = null;
+                state.current.analogSteer = 0;
+                state.current.keyLeft = false;
+                state.current.keyRight = false;
+            }
         };
 
         // Only add swipe handlers if mobile
         if (isMobile) {
-            window.addEventListener('touchstart', handleTouchStart, { passive: true });
-            window.addEventListener('touchmove', handleTouchMove, { passive: true });
-            window.addEventListener('touchend', handleTouchEnd, { passive: true });
-            window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+            window.addEventListener('touchstart', handleTouchStart, { passive: false });
+            window.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchend', handleTouchEnd, { passive: false });
+            window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
         }
 
         return () => {
