@@ -2174,7 +2174,7 @@ export default function GameSpeedPage() {
             `}</style>
 
             {/* Preparation Overlay - Citynight Premium Style */}
-            {mounted && gameState === 'preparation' && (
+            {mounted && assetsLoaded && gameState === 'preparation' && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.9)', color: 'white', fontFamily: 'var(--font-rajdhani)' }}>
                     <div style={{
                         backgroundColor: '#0f172a',
@@ -2235,7 +2235,7 @@ export default function GameSpeedPage() {
             )}
 
             {/* Countdown Overlay - Clean Elegant Style */}
-            {mounted && gameState === 'countdown' && (
+            {mounted && assetsLoaded && gameState === 'countdown' && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' }}>
                     <div style={{ position: 'relative' }}>
                         <div style={{
@@ -2252,7 +2252,7 @@ export default function GameSpeedPage() {
             )}
 
             {/* Victory Overlay - Premium Modern Style */}
-            {mounted && gameState === 'finished' && (
+            {mounted && assetsLoaded && gameState === 'finished' && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(2, 6, 23, 0.95)' }}>
                     <div style={{
                         backgroundColor: '#0f172a',
