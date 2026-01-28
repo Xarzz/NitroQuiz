@@ -90,7 +90,7 @@ const DRAW_DISTANCE = 300;
 const FOG_DENSITY = 5;
 const MAX_SPEED = SEGMENT_LENGTH / STEP;
 const ACCEL = MAX_SPEED / 5;
-const BREAKING = -MAX_SPEED;
+const BREAKING = -MAX_SPEED * 2.5; // Stronger braking for mobile
 const DECEL = -MAX_SPEED / 5;
 const OFF_ROAD_DECEL = -MAX_SPEED / 2;
 const OFF_ROAD_LIMIT = MAX_SPEED / 4;
@@ -975,7 +975,7 @@ export default function GameSpeedPage() {
         let nextPlayerX = playerX;
         if (isMobile && mobileOrientationChoice === 'portrait') {
             // Analog steering for mobile portrait based on swipe distance
-            nextPlayerX = playerX + (state.current.analogSteer * dx * 2.5); // Boosted further
+            nextPlayerX = playerX + (state.current.analogSteer * dx * 3.0); // Boosted for portrait
         } else {
             // Traditional key steering for PC or Mobile Landscape
             // Directly check state.current to ensure latest values on touch/pointer devices
@@ -1455,24 +1455,22 @@ export default function GameSpeedPage() {
     // Touch/Swipe controls for mobile steering (Multi-touch support)
     useEffect(() => {
         const handleTouchStart = (e: TouchEvent) => {
-            // Prevent browser gestures
-            if (e.touches.length > 1) e.preventDefault();
-
-            // If we're already steering, ignore new touches
-            if (steeringTouchId.current !== null) return;
-
             // Look for a touch that is NOT on a button
+            let hitsButton = false;
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
                 const target = touch.target as HTMLElement;
-                if (!(target.tagName === 'BUTTON' || target.closest('button'))) {
+                if (target.tagName === 'BUTTON' || target.closest('button')) {
+                    hitsButton = true;
+                } else if (!hitsButton && steeringTouchId.current === null) {
                     steeringTouchId.current = touch.identifier;
                     touchStartX.current = touch.clientX;
                     touchCurrentX.current = touch.clientX;
-                    // e.preventDefault(); // Don't always prevent start, but consider it
-                    break;
                 }
             }
+
+            // Only prevent default for multi-touch if we aren't hitting UI buttons
+            if (e.touches.length > 1 && !hitsButton) e.preventDefault();
         };
 
         const handleTouchMove = (e: TouchEvent) => {
@@ -1540,8 +1538,11 @@ export default function GameSpeedPage() {
 
         // --- ANTI-ZOOM LOGIC FOR MOBILE ---
         const preventZoom = (e: TouchEvent) => {
-            if (e.touches.length > 1) {
-                e.preventDefault(); // Prevent pinch zoom
+            const target = e.target as HTMLElement;
+            const isButton = target.tagName === 'BUTTON' || target.closest('button');
+
+            if (e.touches.length > 1 && !isButton) {
+                e.preventDefault(); // Prevent pinch zoom, but don't block button clicks
             }
         };
 
@@ -1992,16 +1993,16 @@ export default function GameSpeedPage() {
                                 <div style={{
                                     backgroundColor: 'rgba(0, 0, 0, 0.65)',
                                     backdropFilter: 'blur(15px)',
-                                    padding: isMobileLandscape ? '0.4rem 0.8rem' : (usePCLayout ? '1.5rem 2.5rem' : '0.4rem 0.6rem'),
+                                    padding: isMobileLandscape ? '0.6rem 1rem' : (usePCLayout ? '1.5rem 2.5rem' : '0.4rem 0.6rem'),
                                     borderRadius: usePCLayout ? '2rem' : '0.8rem',
                                     border: '1px solid rgba(255, 255, 255, 0.15)',
                                     flex: usePCLayout ? 'none' : 1,
                                     textAlign: usePCLayout ? 'left' : 'center'
                                 }}>
-                                    <div style={{ fontSize: isMobileLandscape ? '6px' : (usePCLayout ? '10px' : '7px'), color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.1rem' }}>Speedometer</div>
+                                    <div style={{ fontSize: isMobileLandscape ? '8px' : (usePCLayout ? '10px' : '7px'), color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.1rem' }}>Speedometer</div>
                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', justifyContent: usePCLayout ? 'flex-start' : 'center' }}>
                                         <span style={{
-                                            fontSize: isMobileLandscape ? '1.2rem' : (usePCLayout ? '4.5rem' : '1.75rem'),
+                                            fontSize: isMobileLandscape ? '1.8rem' : (usePCLayout ? '4.5rem' : '1.75rem'),
                                             fontWeight: 900,
                                             fontFamily: 'var(--font-rajdhani)',
                                             color: '#fff',
@@ -2010,7 +2011,7 @@ export default function GameSpeedPage() {
                                         }}>
                                             {stats.speed}
                                         </span>
-                                        <span style={{ fontSize: isMobileLandscape ? '0.5rem' : (usePCLayout ? '1rem' : '0.6rem'), color: '#60a5fa', fontWeight: 800 }}>KPH</span>
+                                        <span style={{ fontSize: isMobileLandscape ? '0.7rem' : (usePCLayout ? '1rem' : '0.6rem'), color: '#60a5fa', fontWeight: 800 }}>KPH</span>
                                     </div>
                                 </div>
 
@@ -2024,8 +2025,8 @@ export default function GameSpeedPage() {
                                         pointerEvents: 'auto',
                                         backgroundColor: 'rgba(59, 130, 246, 0.25)',
                                         backdropFilter: 'blur(15px)',
-                                        width: isMobileLandscape ? '2.4rem' : (usePCLayout ? '5rem' : '2.5rem'),
-                                        height: isMobileLandscape ? '2.4rem' : (usePCLayout ? '5rem' : '2.5rem'),
+                                        width: isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem'),
+                                        height: isMobileLandscape ? '3rem' : (usePCLayout ? '5rem' : '2.5rem'),
                                         borderRadius: usePCLayout ? '1.25rem' : '0.6rem',
                                         border: '2px solid rgba(59, 130, 246, 0.5)',
                                         color: 'white',
@@ -2038,7 +2039,7 @@ export default function GameSpeedPage() {
                                         gap: '2px'
                                     }}
                                 >
-                                    <span style={{ fontSize: isMobileLandscape ? '0.9rem' : (usePCLayout ? '1.8rem' : '1rem'), filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}>
+                                    <span style={{ fontSize: isMobileLandscape ? '1.2rem' : (usePCLayout ? '1.8rem' : '1rem'), filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.5))' }}>
                                         {viewMode === 'first' ? '🎥' : '👤'}
                                     </span>
                                     {usePCLayout && <span style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', opacity: 0.8 }}>POV (T)</span>}
@@ -2049,7 +2050,7 @@ export default function GameSpeedPage() {
                                 <div style={{
                                     backgroundColor: 'rgba(0, 0, 0, 0.65)',
                                     backdropFilter: 'blur(15px)',
-                                    padding: isMobileLandscape ? '0.3rem 0.5rem' : (usePCLayout ? '0.6rem 1rem' : '0.4rem 0.75rem'),
+                                    padding: isMobileLandscape ? '0.5rem 0.8rem' : (usePCLayout ? '0.6rem 1rem' : '0.4rem 0.75rem'),
                                     borderRadius: usePCLayout ? '1.25rem' : '0.8rem',
                                     border: '1px solid rgba(255, 255, 255, 0.1)',
                                     display: 'flex',
@@ -2057,15 +2058,15 @@ export default function GameSpeedPage() {
                                     gap: usePCLayout ? '0.75rem' : '0.5rem',
                                     flex: usePCLayout ? 'none' : 1
                                 }}>
-                                    <span style={{ color: '#60a5fa', fontWeight: 900, fontSize: isMobileLandscape ? '0.5rem' : (usePCLayout ? '0.7rem' : '0.6rem'), textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}>NOS</span>
-                                    <div style={{ flex: 1, minWidth: isMobileLandscape ? '50px' : (usePCLayout ? '80px' : '30px'), height: usePCLayout ? '6px' : '4px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                                    <span style={{ color: '#60a5fa', fontWeight: 900, fontSize: isMobileLandscape ? '0.7rem' : (usePCLayout ? '0.7rem' : '0.6rem'), textShadow: '0 0 10px rgba(59, 130, 246, 0.8)' }}>NOS</span>
+                                    <div style={{ flex: 1, minWidth: isMobileLandscape ? '70px' : (usePCLayout ? '80px' : '30px'), height: usePCLayout ? '6px' : '4px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
                                         <div style={{ width: `${stats.nos}%`, height: '100%', backgroundColor: '#3b82f6', boxShadow: '0 0 10px #3b82f6' }} />
                                     </div>
                                 </div>
                                 <div style={{
                                     backgroundColor: 'rgba(0, 0, 0, 0.65)',
                                     backdropFilter: 'blur(15px)',
-                                    padding: isMobileLandscape ? '0.3rem 0.5rem' : (isMobile ? '0.4rem 0.75rem' : '0.6rem 1rem'),
+                                    padding: isMobileLandscape ? '0.5rem 0.8rem' : (isMobile ? '0.4rem 0.75rem' : '0.6rem 1rem'),
                                     borderRadius: usePCLayout ? '1.25rem' : '0.8rem',
                                     border: '1px solid rgba(255, 255, 255, 0.1)',
                                     display: 'flex',
@@ -2073,8 +2074,8 @@ export default function GameSpeedPage() {
                                     gap: '0.35rem',
                                     flex: 'none'
                                 }}>
-                                    <span style={{ color: '#4ade80', fontWeight: 900, fontSize: isMobileLandscape ? '0.5rem' : (usePCLayout ? '0.7rem' : '0.6rem'), textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>LAP</span>
-                                    <span style={{ fontSize: isMobileLandscape ? '0.7rem' : (usePCLayout ? '1.25rem' : '0.8rem'), fontWeight: 900, color: '#fff' }}>{stats.lap}/{stats.totalLaps}</span>
+                                    <span style={{ color: '#4ade80', fontWeight: 900, fontSize: isMobileLandscape ? '0.7rem' : (usePCLayout ? '0.7rem' : '0.6rem'), textShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }}>LAP</span>
+                                    <span style={{ fontSize: isMobileLandscape ? '1rem' : (usePCLayout ? '1.25rem' : '0.8rem'), fontWeight: 900, color: '#fff' }}>{stats.lap}/{stats.totalLaps}</span>
                                 </div>
                             </div>
                         </div>
@@ -2164,6 +2165,7 @@ export default function GameSpeedPage() {
                                         onPointerDown={(e) => { e.preventDefault(); state.current.keyBoost = true; setIsBoosting(true); }}
                                         onPointerUp={(e) => { e.preventDefault(); state.current.keyBoost = false; setIsBoosting(false); }}
                                         onPointerCancel={(e) => { e.preventDefault(); state.current.keyBoost = false; setIsBoosting(false); }}
+                                        onPointerLeave={() => { state.current.keyBoost = false; setIsBoosting(false); }}
                                     >
                                         <span style={{ fontSize: '1.2rem', fontStyle: 'italic', letterSpacing: '-0.05em' }}>NITRO</span>
                                         <div style={{ width: '60%', height: '2px', backgroundColor: 'rgba(255,255,255,0.4)', marginTop: '2px' }} />
@@ -2198,9 +2200,10 @@ export default function GameSpeedPage() {
                                         onPointerDown={(e) => { e.preventDefault(); state.current.keySlower = true; setIsBraking(true); }}
                                         onPointerUp={(e) => { e.preventDefault(); state.current.keySlower = false; setIsBraking(false); }}
                                         onPointerCancel={(e) => { e.preventDefault(); state.current.keySlower = false; setIsBraking(false); }}
+                                        onPointerLeave={() => { state.current.keySlower = false; setIsBraking(false); }}
                                     >
                                         <span style={{ fontSize: '1.2rem', fontStyle: 'italic', letterSpacing: '0.05em' }}>BRAKE</span>
-                                        <div style={{ width: '60%', height: '2px', backgroundColor: state.current.keySlower ? 'rgba(255,255,255,0.4)' : 'rgba(239,68,68,0.4)', marginTop: '2px' }} />
+                                        <div style={{ width: '60%', height: '2px', backgroundColor: isBraking ? 'rgba(255,255,255,0.4)' : 'rgba(239,68,68,0.4)', marginTop: '2px' }} />
                                     </button>
                                 </div>
                             </>
