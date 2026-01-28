@@ -118,6 +118,7 @@ export default function GameSpeedPage() {
     const [isMobile, setIsMobile] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [aspectRatio, setAspectRatio] = useState(1); // width/height ratio for responsive sizing
+    const [miniMapMinimized, setMiniMapMinimized] = useState(false);
 
     // Touch/Swipe refs for mobile controls
     const touchStartX = useRef<number | null>(null);
@@ -1934,23 +1935,58 @@ export default function GameSpeedPage() {
                             </div>
                         </div>
 
-                        {/* Mini Map - Enlarge for Mobile */}
-                        <div style={{ position: 'relative', pointerEvents: 'auto', alignSelf: isMobile ? 'flex-end' : 'auto' }}>
+                        {/* Mini Map - Enlarge for Mobile with Minimize capability */}
+                        <div
+                            onClick={() => isMobile && setMiniMapMinimized(!miniMapMinimized)}
+                            style={{
+                                position: 'relative',
+                                pointerEvents: 'auto',
+                                alignSelf: isMobile ? 'flex-end' : 'auto',
+                                cursor: 'pointer',
+                                transition: 'all 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
+                                zIndex: 300
+                            }}
+                        >
                             <div style={{
                                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
                                 backdropFilter: 'blur(10px)',
                                 padding: isMobile ? '0.2rem' : '0.4rem',
                                 borderRadius: isMobile ? '0.6rem' : '1rem',
                                 border: '1px solid rgba(255, 255, 255, 0.1)',
-                                transform: isMobile ? 'scale(0.85)' : 'none',
+                                transform: isMobile ? (miniMapMinimized ? 'scale(0.3)' : 'scale(0.85)') : 'none',
                                 transformOrigin: 'top right',
                                 marginTop: isMobile ? '0.5rem' : '0',
                                 marginRight: isMobile ? '0.5rem' : '0',
+                                position: 'relative',
+                                transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
                             }}>
                                 <canvas
                                     ref={miniMapRef}
                                     style={{ borderRadius: isMobile ? '0.4rem' : '0.75rem', display: 'block' }}
                                 />
+
+                                {isMobile && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        bottom: '-5px',
+                                        left: '-5px',
+                                        width: '24px',
+                                        height: '24px',
+                                        backgroundColor: '#3b82f6',
+                                        borderRadius: '50%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '12px',
+                                        border: '2px solid white',
+                                        boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)',
+                                        transform: miniMapMinimized ? 'scale(2)' : 'none',
+                                        transformOrigin: 'bottom left',
+                                        transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
+                                    }}>
+                                        {miniMapMinimized ? '🔍' : '↔️'}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
