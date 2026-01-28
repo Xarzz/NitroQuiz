@@ -2001,19 +2001,25 @@ export default function GameSpeedPage() {
                                 <div style={{ display: 'flex', gap: '0.75rem', pointerEvents: 'auto' }}>
                                     <button
                                         style={{
-                                            width: '4.25rem', height: '4.25rem',
-                                            background: stats.nos > 0 ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'rgba(255, 255, 255, 0.05)',
+                                            width: '4.5rem', height: '4.5rem',
+                                            background: stats.nos > 0
+                                                ? 'radial-gradient(circle at center, #3b82f6 0%, #1e40af 100%)'
+                                                : 'rgba(255, 255, 255, 0.05)',
                                             borderRadius: '50%',
-                                            border: '2px solid rgba(59, 130, 246, 0.5)',
+                                            border: stats.nos > 0 ? '3px solid #60a5fa' : '2px solid rgba(255, 255, 255, 0.1)',
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                            cursor: 'pointer', opacity: stats.nos > 0 ? 1 : 0.5, color: 'white', fontWeight: 900,
-                                            boxShadow: stats.nos > 0 ? '0 0 15px rgba(59, 130, 246, 0.4)' : 'none',
+                                            cursor: 'pointer', opacity: stats.nos > 0 ? 1 : 0.5, color: 'white',
+                                            fontWeight: 900,
+                                            boxShadow: stats.nos > 0 ? '0 0 25px rgba(59, 130, 246, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.3)' : 'none',
+                                            transition: 'all 0.1s ease',
+                                            transform: state.current.keyBoost ? 'scale(0.92)' : 'scale(1)',
+                                            fontFamily: 'var(--font-rajdhani)',
                                         }}
                                         onTouchStart={(e) => { e.preventDefault(); state.current.keyBoost = true; }}
                                         onTouchEnd={(e) => { e.preventDefault(); state.current.keyBoost = false; }}
                                     >
-                                        <span style={{ fontSize: '1.5rem', filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>🚀</span>
-                                        <span style={{ fontSize: '0.7rem', marginTop: '2px' }}>NOS</span>
+                                        <span style={{ fontSize: '1.2rem', fontStyle: 'italic', letterSpacing: '-0.05em' }}>NITRO</span>
+                                        <div style={{ width: '60%', height: '2px', backgroundColor: 'rgba(255,255,255,0.4)', marginTop: '2px' }} />
                                     </button>
                                 </div>
 
@@ -2023,21 +2029,29 @@ export default function GameSpeedPage() {
                                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', pointerEvents: 'auto' }}>
                                     <button
                                         style={{
-                                            width: '4.25rem', height: '4.25rem',
-                                            backgroundColor: state.current.keySlower ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.15)',
+                                            width: '4.5rem', height: '4.5rem',
+                                            background: state.current.keySlower
+                                                ? 'radial-gradient(circle at center, #ef4444 0%, #991b1b 100%)'
+                                                : 'rgba(239, 68, 68, 0.1)',
                                             backdropFilter: 'blur(8px)',
                                             borderRadius: '50%',
-                                            border: '2px solid rgba(239, 68, 68, 0.5)',
+                                            border: '3px solid #ef4444',
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                            cursor: 'pointer', color: '#ef4444', fontWeight: 900,
-                                            textShadow: '0 0 8px rgba(239, 68, 68, 0.8)',
-                                            boxShadow: state.current.keySlower ? '0 0 15px rgba(239, 68, 68, 0.4)' : 'none',
+                                            cursor: 'pointer', color: state.current.keySlower ? 'white' : '#ef4444',
+                                            fontWeight: 900,
+                                            textShadow: state.current.keySlower ? '0 0 10px white' : '0 0 8px rgba(239, 68, 68, 0.8)',
+                                            boxShadow: state.current.keySlower
+                                                ? '0 0 30px rgba(239, 68, 68, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.3)'
+                                                : '0 0 10px rgba(239, 68, 68, 0.2)',
+                                            transition: 'all 0.1s ease',
+                                            transform: state.current.keySlower ? 'scale(0.92)' : 'scale(1)',
+                                            fontFamily: 'var(--font-rajdhani)',
                                         }}
                                         onTouchStart={(e) => { e.preventDefault(); state.current.keySlower = true; }}
                                         onTouchEnd={(e) => { e.preventDefault(); state.current.keySlower = false; }}
                                     >
-                                        <span style={{ fontSize: '1.5rem' }}>🛑</span>
-                                        <span style={{ fontSize: '0.7rem', marginTop: '2px' }}>BRAKE</span>
+                                        <span style={{ fontSize: '1.2rem', fontStyle: 'italic', letterSpacing: '0.05em' }}>BRAKE</span>
+                                        <div style={{ width: '60%', height: '2px', backgroundColor: state.current.keySlower ? 'rgba(255,255,255,0.4)' : 'rgba(239,68,68,0.4)', marginTop: '2px' }} />
                                     </button>
                                 </div>
                             </>
