@@ -186,6 +186,7 @@ export default function GameSpeedPage() {
                 { name: 'car_diag_left', src: '/assets/vehicles/mc/diag-left-sonic.png' },
                 { name: 'car_diag_right', src: '/assets/vehicles/mc/diag-right-sonic.png' },
                 { name: 'bg', src: '/assets/backgorund/citynight.png' },
+                { name: 'bg_mobile', src: '/assets/backgorund/citynight_mobile.png' }, // Aset khusus mobile
                 { name: 'obstacle', src: '/assets/obstacles/obstacle_barrel.png' },
                 { name: 'npc_car', src: '/assets/vehicles/car_ai_blue.jpg' },
                 { name: 'construction', src: '/assets/obstacles/construction_barrier.png' },
@@ -317,6 +318,8 @@ export default function GameSpeedPage() {
 
             await Promise.all(promises);
             console.log("Assets loaded. Taxi sprites:", {
+                bg: !!state.current.sprites.bg,
+                bg_mobile: !!state.current.sprites.bg_mobile,
                 taxi_straight: !!state.current.sprites.taxi_straight,
                 taxi_left: !!state.current.sprites.taxi_left,
                 taxi_right: !!state.current.sprites.taxi_right,
@@ -1217,8 +1220,10 @@ export default function GameSpeedPage() {
         const speedPercent = speed / MAX_SPEED;
 
         // Background (Fixed Perspective Parallax - Full Cover)
-        if (sprites.bg) {
-            const bg = sprites.bg;
+        const bgAsset = isMobile && sprites.bg_mobile ? sprites.bg_mobile : sprites.bg;
+
+        if (bgAsset) {
+            const bg = bgAsset;
             const bgW = bg.width;
             const bgH = bg.height;
 
@@ -1924,21 +1929,7 @@ export default function GameSpeedPage() {
                                     </button>
                                 </div>
 
-                                {/* Center - Swipe Indicator */}
-                                <div style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'rgba(255, 255, 255, 0.5)',
-                                    pointerEvents: 'none'
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <span style={{ fontSize: '1.5rem', opacity: state.current.keyLeft ? 1 : 0.3 }}>👈</span>
-                                        <span style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Swipe to Steer</span>
-                                        <span style={{ fontSize: '1.5rem', opacity: state.current.keyRight ? 1 : 0.3 }}>👉</span>
-                                    </div>
-                                </div>
+
 
                                 {/* Right side - Brake Button */}
                                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', pointerEvents: 'auto' }}>
