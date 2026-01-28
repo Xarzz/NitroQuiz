@@ -973,12 +973,13 @@ export default function GameSpeedPage() {
         let nextPlayerX = playerX;
         if (isMobile && mobileOrientationChoice === 'portrait') {
             // Analog steering for mobile portrait based on swipe distance
-            nextPlayerX = playerX + (state.current.analogSteer * dx * 2.0); // Slightly boosted
+            nextPlayerX = playerX + (state.current.analogSteer * dx * 2.5); // Boosted further
         } else {
             // Traditional key steering for PC or Mobile Landscape
-            // Directly check state.current to ensure latest values on touch devices
-            if (state.current.keyLeft) nextPlayerX = playerX - (dx * 1.5); // Boosted steering for mobile buttons
-            else if (state.current.keyRight) nextPlayerX = playerX + (dx * 1.5);
+            // Directly check state.current to ensure latest values on touch/pointer devices
+            const steerForce = (isMobile ? 2.5 : 1.0); // Stronger steer for touch buttons
+            if (state.current.keyLeft) nextPlayerX = playerX - (dx * steerForce);
+            else if (state.current.keyRight) nextPlayerX = playerX + (dx * steerForce);
         }
 
         // Centrifugal
@@ -2053,14 +2054,15 @@ export default function GameSpeedPage() {
                             <div style={{
                                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
                                 backdropFilter: 'blur(10px)',
-                                padding: isMobile ? '0.2rem' : '0.4rem',
+                                padding: isMobile ? '0.25rem' : '0.4rem',
                                 borderRadius: isMobile ? '0.6rem' : '1rem',
                                 transform: (isMobile && miniMapMinimized) ? 'scale(0.35)' : (isMobile ? 'scale(0.85)' : 'none'),
                                 transformOrigin: 'top right',
                                 marginTop: (isMobile && !usePCLayout) ? '0.5rem' : '0',
                                 marginRight: (isMobile && !usePCLayout) ? '0.5rem' : '0',
                                 position: 'relative',
-                                transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
+                                transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
+                                border: isMobile ? '2px solid rgba(255,255,255,0.2)' : 'none'
                             }}>
                                 <canvas
                                     ref={miniMapRef}
@@ -2070,21 +2072,22 @@ export default function GameSpeedPage() {
                                 {isMobile && (
                                     <div style={{
                                         position: 'absolute',
-                                        bottom: '-5px',
-                                        left: '-5px',
-                                        width: '24px',
-                                        height: '24px',
+                                        bottom: '-8px',
+                                        left: '-8px',
+                                        width: '32px',
+                                        height: '32px',
                                         backgroundColor: '#3b82f6',
                                         borderRadius: '50%',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        fontSize: '12px',
+                                        fontSize: '16px',
                                         border: '2px solid white',
-                                        boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)',
-                                        transform: miniMapMinimized ? 'scale(2.5)' : 'none',
+                                        boxShadow: '0 0 15px rgba(59, 130, 246, 0.7)',
+                                        transform: miniMapMinimized ? 'scale(2.2)' : 'none',
                                         transformOrigin: 'bottom left',
-                                        transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
+                                        transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
+                                        zIndex: 10
                                     }}>
                                         {miniMapMinimized ? '🔍' : '↔️'}
                                     </div>
@@ -2173,11 +2176,10 @@ export default function GameSpeedPage() {
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             cursor: 'pointer', outline: 'none'
                                         }}
-                                        onTouchStart={(e) => { e.preventDefault(); state.current.keyLeft = true; }}
-                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keyLeft = false; }}
-                                        onMouseDown={() => { state.current.keyLeft = true; }}
-                                        onMouseUp={() => { state.current.keyLeft = false; }}
-                                        onMouseLeave={() => { state.current.keyLeft = false; }}
+                                        onPointerDown={(e) => { e.preventDefault(); state.current.keyLeft = true; }}
+                                        onPointerUp={(e) => { e.preventDefault(); state.current.keyLeft = false; }}
+                                        onPointerCancel={(e) => { e.preventDefault(); state.current.keyLeft = false; }}
+                                        onPointerLeave={(e) => { state.current.keyLeft = false; }}
                                     >
                                         <span style={{ fontSize: isMobileLandscape ? '1rem' : '1.25rem', color: 'white', filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>◀</span>
                                     </button>
@@ -2192,11 +2194,10 @@ export default function GameSpeedPage() {
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             cursor: 'pointer', outline: 'none'
                                         }}
-                                        onTouchStart={(e) => { e.preventDefault(); state.current.keyRight = true; }}
-                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keyRight = false; }}
-                                        onMouseDown={() => { state.current.keyRight = true; }}
-                                        onMouseUp={() => { state.current.keyRight = false; }}
-                                        onMouseLeave={() => { state.current.keyRight = false; }}
+                                        onPointerDown={(e) => { e.preventDefault(); state.current.keyRight = true; }}
+                                        onPointerUp={(e) => { e.preventDefault(); state.current.keyRight = false; }}
+                                        onPointerCancel={(e) => { e.preventDefault(); state.current.keyRight = false; }}
+                                        onPointerLeave={(e) => { state.current.keyRight = false; }}
                                     >
                                         <span style={{ fontSize: isMobileLandscape ? '1rem' : '1.25rem', color: 'white', filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>▶</span>
                                     </button>
@@ -2218,11 +2219,10 @@ export default function GameSpeedPage() {
                                             fontSize: isMobileLandscape ? '0.5rem' : '0.6rem',
                                             textShadow: '0 0 8px rgba(239, 68, 68, 0.8)'
                                         }}
-                                        onTouchStart={(e) => { e.preventDefault(); state.current.keySlower = true; }}
-                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keySlower = false; }}
-                                        onMouseDown={() => { state.current.keySlower = true; }}
-                                        onMouseUp={() => { state.current.keySlower = false; }}
-                                        onMouseLeave={() => { state.current.keySlower = false; }}
+                                        onPointerDown={(e) => { e.preventDefault(); state.current.keySlower = true; }}
+                                        onPointerUp={(e) => { e.preventDefault(); state.current.keySlower = false; }}
+                                        onPointerCancel={(e) => { e.preventDefault(); state.current.keySlower = false; }}
+                                        onPointerLeave={(e) => { state.current.keySlower = false; }}
                                     >
                                         STOP
                                     </button>
@@ -2240,11 +2240,10 @@ export default function GameSpeedPage() {
                                             fontSize: isMobileLandscape ? '1.1rem' : '1.25rem',
                                             boxShadow: isMobileLandscape ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none'
                                         }}
-                                        onTouchStart={(e) => { e.preventDefault(); state.current.keyFaster = true; }}
-                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keyFaster = false; }}
-                                        onMouseDown={() => { state.current.keyFaster = true; }}
-                                        onMouseUp={() => { state.current.keyFaster = false; }}
-                                        onMouseLeave={() => { state.current.keyFaster = false; }}
+                                        onPointerDown={(e) => { e.preventDefault(); state.current.keyFaster = true; }}
+                                        onPointerUp={(e) => { e.preventDefault(); state.current.keyFaster = false; }}
+                                        onPointerCancel={(e) => { e.preventDefault(); state.current.keyFaster = false; }}
+                                        onPointerLeave={(e) => { state.current.keyFaster = false; }}
                                     >
                                         <span style={{ filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>GO</span>
                                     </button>
@@ -2262,11 +2261,10 @@ export default function GameSpeedPage() {
                                             fontSize: isMobileLandscape ? '0.7rem' : '0.8rem',
                                             boxShadow: stats.nos > 0 && isMobileLandscape ? '0 0 15px rgba(59, 130, 246, 0.4)' : 'none'
                                         }}
-                                        onTouchStart={(e) => { e.preventDefault(); state.current.keyBoost = true; }}
-                                        onTouchEnd={(e) => { e.preventDefault(); state.current.keyBoost = false; }}
-                                        onMouseDown={() => { state.current.keyBoost = true; }}
-                                        onMouseUp={() => { state.current.keyBoost = false; }}
-                                        onMouseLeave={() => { state.current.keyBoost = false; }}
+                                        onPointerDown={(e) => { e.preventDefault(); state.current.keyBoost = true; }}
+                                        onPointerUp={(e) => { e.preventDefault(); state.current.keyBoost = false; }}
+                                        onPointerCancel={(e) => { e.preventDefault(); state.current.keyBoost = false; }}
+                                        onPointerLeave={(e) => { state.current.keyBoost = false; }}
                                     >
                                         <span style={{ filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))' }}>NOS</span>
                                     </button>
