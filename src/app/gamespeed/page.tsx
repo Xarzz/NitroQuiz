@@ -119,6 +119,25 @@ export default function GameSpeedPage() {
     const [mounted, setMounted] = useState(false);
     const [aspectRatio, setAspectRatio] = useState(1); // width/height ratio for responsive sizing
 
+    // Inject meta tags for mobile safe areas
+    useEffect(() => {
+        if (typeof document !== 'undefined') {
+            const viewport = document.querySelector('meta[name="viewport"]');
+            if (viewport) {
+                viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover');
+            }
+
+            const themeColor = document.createElement('meta');
+            themeColor.name = "theme-color";
+            themeColor.content = "#020617";
+            document.head.appendChild(themeColor);
+
+            return () => {
+                if (themeColor.parentNode) document.head.removeChild(themeColor);
+            };
+        }
+    }, []);
+
     // Touch/Swipe refs for mobile controls
     const touchStartX = useRef<number | null>(null);
     const touchCurrentX = useRef<number | null>(null);
@@ -1223,11 +1242,8 @@ export default function GameSpeedPage() {
             const bgH = bg.height;
 
             // 1. Scale to cover screen with extra width for movement
-            // Increased scale for mobile portrait (9:16) to prevent top gaps
-            const extraParallax = isMobile ? 2.0 : 1.3;
-            const scaleX = (width / bgW) * extraParallax;
-            const scaleY = (height / bgH) * (isMobile ? 1.2 : 1.0); // Extra height buffer for mobile
-            const layerScale = Math.max(scaleX, scaleY);
+            // Strictly ensuring height and width are covered plus margin for parallax
+            const layerScale = Math.max(width / bgW, height / bgH) * (isMobile ? 1.5 : 1.2);
 
             const scaledW = bgW * layerScale;
             const scaledH = bgH * layerScale;
@@ -1247,15 +1263,6 @@ export default function GameSpeedPage() {
 
             ctx.save();
             ctx.drawImage(bg, finalScrollX, finalScrollY, scaledW, scaledH);
-
-            // Add a subtle top gradient to blend with browser chrome/status bar on mobile
-            if (isMobile) {
-                const gradient = ctx.createLinearGradient(0, 0, 0, 100);
-                gradient.addColorStop(0, 'rgba(2, 6, 23, 1)'); // Use COLORS.SKY
-                gradient.addColorStop(1, 'rgba(2, 6, 23, 0)');
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, width, 100);
-            }
             ctx.restore();
         }
 
@@ -1767,7 +1774,7 @@ export default function GameSpeedPage() {
         <div style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: '#020617',
+            backgroundColor: '#000000', // Pure black background
             overflow: 'hidden',
             userSelect: 'none',
             WebkitUserSelect: 'none',
@@ -1800,13 +1807,14 @@ export default function GameSpeedPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: isMobile ? '100%' : 'auto' }}>
                             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: isMobile ? 'center' : 'flex-start' }}>
                                 <div style={{
-                                    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-                                    backdropFilter: 'blur(15px)',
+                                    backgroundColor: 'rgba(7, 10, 15, 0.9)', // Solid dark background
+                                    backdropFilter: 'blur(20px)',
                                     padding: isMobile ? '0.75rem 1rem' : '1.5rem 2.5rem',
                                     borderRadius: isMobile ? '1.5rem' : '2rem',
-                                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
                                     flex: isMobile ? 1 : 'none',
-                                    textAlign: isMobile ? 'center' : 'left'
+                                    textAlign: isMobile ? 'center' : 'left',
+                                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.6)'
                                 }}>
                                     <div style={{ fontSize: isMobile ? '9px' : '10px', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 900, marginBottom: '0.25rem' }}>Speedometer</div>
                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', justifyContent: isMobile ? 'center' : 'flex-start' }}>
@@ -1893,13 +1901,14 @@ export default function GameSpeedPage() {
                         {/* Mini Map - Visible on both PC and Mobile */}
                         <div style={{ position: 'relative', pointerEvents: 'auto' }}>
                             <div style={{
-                                backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                                backgroundColor: 'rgba(7, 10, 15, 0.9)',
                                 backdropFilter: 'blur(10px)',
                                 padding: isMobile ? '0.25rem' : '0.4rem',
                                 borderRadius: isMobile ? '0.75rem' : '1rem',
                                 border: '1px solid rgba(255, 255, 255, 0.1)',
                                 transform: isMobile ? 'scale(0.6)' : 'none',
                                 transformOrigin: 'top right',
+                                boxShadow: '0 5px 20px rgba(0, 0, 0, 0.5)'
                             }}>
                                 <canvas
                                     ref={miniMapRef}
