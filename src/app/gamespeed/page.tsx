@@ -1223,10 +1223,9 @@ export default function GameSpeedPage() {
             const bgH = bg.height;
 
             // 1. Scale to cover screen with extra width for movement
-            // Increased scale for mobile portrait (9:16) to prevent top gaps
-            const extraParallax = isMobile ? 2.0 : 1.3;
+            const extraParallax = isMobile ? 1.5 : 1.3;
             const scaleX = (width / bgW) * extraParallax;
-            const scaleY = (height / bgH) * (isMobile ? 1.2 : 1.0); // Extra height buffer for mobile
+            const scaleY = (height / bgH);
             const layerScale = Math.max(scaleX, scaleY);
 
             const scaledW = bgW * layerScale;
@@ -1241,21 +1240,11 @@ export default function GameSpeedPage() {
             state.current.bgOffset = Util.limit(state.current.bgOffset, -maxAllowedFactor, maxAllowedFactor);
 
             // 4. Position and Render
-            // On mobile, anchor to top (0) to ensure sky covers the status bar area
             const finalScrollX = ((width - scaledW) / 2) - (state.current.bgOffset * scaledW);
-            const finalScrollY = isMobile ? 0 : (height - scaledH) / 2;
+            const finalScrollY = (height - scaledH) / 2;
 
             ctx.save();
             ctx.drawImage(bg, finalScrollX, finalScrollY, scaledW, scaledH);
-
-            // Add a subtle top gradient to blend with browser chrome/status bar on mobile
-            if (isMobile) {
-                const gradient = ctx.createLinearGradient(0, 0, 0, 100);
-                gradient.addColorStop(0, 'rgba(2, 6, 23, 1)'); // Use COLORS.SKY
-                gradient.addColorStop(1, 'rgba(2, 6, 23, 0)');
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, width, 100);
-            }
             ctx.restore();
         }
 
