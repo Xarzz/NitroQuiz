@@ -973,11 +973,12 @@ export default function GameSpeedPage() {
         let nextPlayerX = playerX;
         if (isMobile && mobileOrientationChoice === 'portrait') {
             // Analog steering for mobile portrait based on swipe distance
-            nextPlayerX = playerX + (state.current.analogSteer * dx * 1.5);
+            nextPlayerX = playerX + (state.current.analogSteer * dx * 2.0); // Slightly boosted
         } else {
             // Traditional key steering for PC or Mobile Landscape
-            if (keyLeft) nextPlayerX = playerX - dx;
-            else if (keyRight) nextPlayerX = playerX + dx;
+            // Directly check state.current to ensure latest values on touch devices
+            if (state.current.keyLeft) nextPlayerX = playerX - (dx * 1.5); // Boosted steering for mobile buttons
+            else if (state.current.keyRight) nextPlayerX = playerX + (dx * 1.5);
         }
 
         // Centrifugal
@@ -2054,10 +2055,10 @@ export default function GameSpeedPage() {
                                 backdropFilter: 'blur(10px)',
                                 padding: isMobile ? '0.2rem' : '0.4rem',
                                 borderRadius: isMobile ? '0.6rem' : '1rem',
-                                transform: usePCLayout ? 'none' : (miniMapMinimized ? 'scale(0.3)' : 'scale(0.85)'),
+                                transform: (isMobile && miniMapMinimized) ? 'scale(0.35)' : (isMobile ? 'scale(0.85)' : 'none'),
                                 transformOrigin: 'top right',
-                                marginTop: usePCLayout ? '0' : '0.5rem',
-                                marginRight: usePCLayout ? '0' : '0.5rem',
+                                marginTop: (isMobile && !usePCLayout) ? '0.5rem' : '0',
+                                marginRight: (isMobile && !usePCLayout) ? '0.5rem' : '0',
                                 position: 'relative',
                                 transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
                             }}>
@@ -2066,7 +2067,7 @@ export default function GameSpeedPage() {
                                     style={{ borderRadius: usePCLayout ? '0.75rem' : '0.4rem', display: 'block' }}
                                 />
 
-                                {!usePCLayout && (
+                                {isMobile && (
                                     <div style={{
                                         position: 'absolute',
                                         bottom: '-5px',
@@ -2081,7 +2082,7 @@ export default function GameSpeedPage() {
                                         fontSize: '12px',
                                         border: '2px solid white',
                                         boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)',
-                                        transform: miniMapMinimized ? 'scale(2)' : 'none',
+                                        transform: miniMapMinimized ? 'scale(2.5)' : 'none',
                                         transformOrigin: 'bottom left',
                                         transition: 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)'
                                     }}>
