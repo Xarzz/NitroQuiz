@@ -203,6 +203,13 @@ export default function GameSpeedPage() {
                 { name: 'car_rival', src: '/assets/vehicles/foward-opponent.png' },
                 { name: 'truck1', src: '/assets/vehicles/truck1.png' },
                 { name: 'truck2', src: '/assets/vehicles/truck2.png' },
+                // Truck Animation Assets
+                { name: 'truck_straight_0', src: '/assets/vehicles/truck/0.png' },
+                { name: 'truck_straight_1', src: '/assets/vehicles/truck/1.png' },
+                { name: 'truck_left_0', src: '/assets/vehicles/truck/0left.png' },
+                { name: 'truck_left_1', src: '/assets/vehicles/truck/1kiri.png' },
+                { name: 'truck_right_0', src: '/assets/vehicles/truck/0kanan.png' },
+                { name: 'truck_right_1', src: '/assets/vehicles/truck/1kanan.png' },
                 // JNE Truck Animation Assets
                 { name: 'jne_straight_1', src: '/assets/vehicles/jne/1lurus.png' },
                 { name: 'jne_straight_2', src: '/assets/vehicles/jne/2lurus.png' },
@@ -531,7 +538,7 @@ export default function GameSpeedPage() {
 
             if (vehicleTypeRnd < 0.25) {
                 vehicleType = 'truck';
-                vehicleSprite = state.current.sprites.truck2;
+                vehicleSprite = state.current.sprites.truck_straight_0 || state.current.sprites.truck2;
             } else if (vehicleTypeRnd < 0.5) {
                 vehicleType = 'jne';
                 vehicleSprite = state.current.sprites.jne_straight_1;
@@ -551,7 +558,7 @@ export default function GameSpeedPage() {
                 speed: speed,
                 percent: 0,
                 type: vehicleType,
-                animTimer: (vehicleType === 'jne' || vehicleType === 'odong' || vehicleType === 'taxi') ? Math.random() * 100 : 0,
+                animTimer: (vehicleType === 'jne' || vehicleType === 'odong' || vehicleType === 'taxi' || vehicleType === 'truck') ? Math.random() * 100 : 0,
                 animFrame: 0
             };
             state.current.cars.push(car);
@@ -723,7 +730,7 @@ export default function GameSpeedPage() {
 
         let worldWidth = carWorldWidth; // NPC mobil standar
         if (name === 'traffic_light') worldWidth = carWorldWidth * 1.2;
-        else if (name === 'truck1' || name === 'truck2') worldWidth = carWorldWidth * 2.2; // Truk jauh lebih besar
+        else if (name?.startsWith('truck')) worldWidth = carWorldWidth * 2.2; // Truk jauh lebih besar
         else if (name?.includes('car_rival') || name === 'foward-opponent') worldWidth = carWorldWidth; // Rival sama dengan player
         else if (name?.includes('odong') || name?.includes('taxi')) worldWidth = carWorldWidth * 1.5; // Slightly larger than standard car
         else if (name?.includes('kiri_') || name?.includes('kanan_')) worldWidth = carWorldWidth * 12; // Bangunan sangat besar
@@ -1091,8 +1098,25 @@ export default function GameSpeedPage() {
                 car.z = Util.increase(car.z, trackLength, trackLength);
             }
 
-            // --- NPC Animation Logic (JNE Trucks) ---
-            if (car.type === 'jne') {
+            // --- NPC Animation Logic (JNE, Truck, Odong, Taxi) ---
+            if (car.type === 'truck') {
+                car.animTimer = (car.animTimer || 0) + dt * 1000;
+                if (car.animTimer > 150) { // Cycle every 150ms
+                    car.animTimer = 0;
+                    car.animFrame = car.animFrame === 0 ? 1 : 0;
+                }
+
+                const currentSeg = findSegment(car.z);
+                const curve = currentSeg.curve;
+
+                if (curve < -0.5) {
+                    car.sprite = car.animFrame === 0 ? state.current.sprites.truck_left_0 : state.current.sprites.truck_left_1;
+                } else if (curve > 0.5) {
+                    car.sprite = car.animFrame === 0 ? state.current.sprites.truck_right_0 : state.current.sprites.truck_right_1;
+                } else {
+                    car.sprite = car.animFrame === 0 ? state.current.sprites.truck_straight_0 : state.current.sprites.truck_straight_1;
+                }
+            } else if (car.type === 'jne') {
                 car.animTimer = (car.animTimer || 0) + dt * 1000;
                 if (car.animTimer > 100) { // Toggle every 100ms
                     car.animTimer = 0;
