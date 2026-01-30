@@ -1,0 +1,67 @@
+<svg width="600" height="800" viewBox="0 0 600 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient for Windows Glow -->
+  <defs>
+    <radialGradient id="windowGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff9c4" />
+      <stop offset="100%" stop-color="#fbc02d" />
+    </radialGradient>
+    <linearGradient id="wallGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#263238" />
+      <stop offset="100%" stop-color="#1a237e" />
+    </linearGradient>
+  </defs>
+
+  <!-- Side Facade (Perspective View) -->
+  <path d="M100 150 L100 750 L250 700 L250 100 Z" fill="#1c2331" stroke="#000" stroke-width="2"/>
+  
+  <!-- Front Facade -->
+  <rect x="250" y="100" width="300" height="600" fill="#2c3e50" stroke="#000" stroke-width="2" />
+
+  <!-- Main Entrance Portal (Glowing Center) -->
+  <rect x="300" y="450" width="200" height="250" fill="#34495e" />
+  <rect x="320" y="500" width="160" height="200" fill="#e3f2fd" opacity="0.6" /> <!-- Glass area -->
+  
+  <!-- Windows - Side -->
+  <g id="sideWindows">
+    <rect x="120" y="180" width="20" height="20" fill="url(#windowGlow)" />
+    <rect x="160" y="180" width="20" height="20" fill="url(#windowGlow)" />
+    <rect x="200" y="175" width="20" height="20" fill="#102027" /> <!-- Dark window -->
+    
+    <rect x="120" y="240" width="20" height="20" fill="url(#windowGlow)" />
+    <rect x="160" y="240" width="20" height="20" fill="#102027" />
+    <rect x="200" y="235" width="20" height="20" fill="url(#windowGlow)" />
+
+    <rect x="120" y="300" width="20" height="20" fill="url(#windowGlow)" />
+    <rect x="160" y="300" width="20" height="20" fill="url(#windowGlow)" />
+    <rect x="200" y="295" width="20" height="20" fill="#102027" />
+  </g>
+
+  <!-- Windows - Front -->
+  <g id="frontWindows">
+    <!-- Grid pattern for windows -->
+    <rect x="280" y="150" width="25" height="25" fill="url(#windowGlow)" rx="2"/>
+    <rect x="330" y="150" width="25" height="25" fill="#102027" rx="2"/>
+    <rect x="380" y="150" width="25" height="25" fill="url(#windowGlow)" rx="2"/>
+    <rect x="430" y="150" width="25" height="25" fill="url(#windowGlow)" rx="2"/>
+    <rect x="480" y="150" width="25" height="25" fill="#102027" rx="2"/>
+
+    <rect x="280" y="200" width="25" height="25" fill="url(#windowGlow)" rx="2"/>
+    <rect x="330" y="200" width="25" height="25" fill="url(#windowGlow)" rx="2"/>
+    <rect x="380" y="200" width="25" height="25" fill="#102027" rx="2"/>
+    <rect x="430" y="200" width="25" height="25" fill="url(#windowGlow)" rx="2"/>
+    <rect x="480" y="200" width="25" height="25" fill="url(#windowGlow)" rx="2"/>
+
+    <rect x="280" y="250" width="25" height="25" fill="#102027" rx="2"/>
+    <rect x="330" y="250" width="25" height="25" fill="url(#windowGlow)" rx="2"/>
+    <rect x="380" y="250" width="25" height="25" fill="url(#windowGlow)" rx="2"/>
+    <rect x="430" y="250" width="25" height="25" fill="url(#windowGlow)" rx="2"/>
+    <rect x="480" y="250" width="25" height="25" fill="#102027" rx="2"/>
+  </g>
+
+  <!-- MCC Signage -->
+  <rect x="320" y="420" width="100" height="30" fill="#0d47a1" rx="5" />
+  <text x="335" y="442" fill="white" font-family="Arial, sans-serif" font-weight="bold" font-size="18">MCC</text>
+  
+  <!-- Stairs/Base -->
+  <path d="M250 700 L550 700 L580 750 L220 750 Z" fill="#455a64" />
+</svg>
