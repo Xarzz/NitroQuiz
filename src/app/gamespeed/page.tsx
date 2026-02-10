@@ -221,7 +221,7 @@ export default function GameSpeedPage() {
                 { name: 'kiri_basmallah', src: '/assets/material/kiri_jalan/1basmallah.webp' },
                 { name: 'kiri_game', src: '/assets/material/kiri_jalan/1gameforsmart.webp' },
                 { name: 'kiri_ganesha', src: '/assets/material/kiri_jalan/1ganesha.webp' },
-                { name: 'kiri_restoran', src: '/assets/material/kiri_jalan/restoran1png.webp' },
+                { name: 'kiri_matos', src: '/assets/material/kiri_jalan/2matos.webp' },
                 { name: 'kiri_ruangguru', src: '/assets/material/kiri_jalan/1ruangguru.webp' },
                 { name: 'kiri_ubig', src: '/assets/material/kiri_jalan/1ubig.webp' },
                 { name: 'kiri_kemendikbud', src: '/assets/material/kiri_jalan/2kemendikbud.webp' },
@@ -231,6 +231,9 @@ export default function GameSpeedPage() {
                 { name: 'kiri_bsi_3', src: '/assets/material/kiri_jalan/3bsi.webp' },
                 { name: 'kiri_gacoan', src: '/assets/material/kiri_jalan/1gacoan.webp' },
                 { name: 'kiri_lawson', src: '/assets/material/kiri_jalan/2lawson.webp' },
+                { name: 'kiri_cgv', src: '/assets/material/kiri_jalan/2cgv.webp' },
+                { name: 'kiri_pocari', src: '/assets/material/kiri_jalan/2pocari.webp' },
+                { name: 'kiri_shell', src: '/assets/material/kiri_jalan/2shell.webp' },
 
                 // Assets Kanan Jalan
                 { name: 'kanan_kemendikbud', src: '/assets/material/kanan_jalan/1kemendikbud.webp' },
@@ -239,7 +242,7 @@ export default function GameSpeedPage() {
                 { name: 'kanan_ruangguru', src: '/assets/material/kanan_jalan/2ruangguru.webp' },
                 { name: 'kanan_ubig', src: '/assets/material/kanan_jalan/2ubig.webp' },
                 { name: 'kanan_ruangguru_2', src: '/assets/material/kanan_jalan/3ruangguru.webp' },
-                { name: 'kanan_kaffa', src: '/assets/material/kanan_jalan/kaffe1.webp' },
+                { name: 'kanan_matos', src: '/assets/material/kanan_jalan/1matos.webp' },
                 { name: 'kanan_bsi_1', src: '/assets/material/kanan_jalan/1bsi.webp' },
                 { name: 'kanan_baliho_2', src: '/assets/material/kanan_jalan/2baliho.webp' },
                 { name: 'kanan_mcc_2', src: '/assets/material/kanan_jalan/2mcc.webp' },
@@ -247,6 +250,9 @@ export default function GameSpeedPage() {
                 { name: 'kanan_burgerking', src: '/assets/material/kanan_jalan/1burgerking.webp' },
                 { name: 'kanan_burgerking_2', src: '/assets/material/kanan_jalan/2burgerking.webp' },
                 { name: 'kanan_gacoan', src: '/assets/material/kanan_jalan/2gacoan.webp' },
+                { name: 'kanan_cgv', src: '/assets/material/kanan_jalan/1cgv.webp' },
+                { name: 'kanan_pocari', src: '/assets/material/kanan_jalan/1pocari.webp' },
+                { name: 'kanan_shell', src: '/assets/material/kanan_jalan/1shell.webp' },
                 // Starting Sequence - Revving Animation
                 { name: 'start_1', src: '/assets/vehicles/start/1.webp' },
                 { name: 'start_2', src: '/assets/vehicles/start/2.webp' },
@@ -476,13 +482,13 @@ export default function GameSpeedPage() {
 
         const leftBuildingSequence = [
             'kiri_basmallah', 'kiri_game', 'kiri_ganesha',
-            'kiri_baliho_1', 'kiri_lawson',
-            'kiri_restoran', 'kiri_ruangguru', 'kiri_ubig', 'kiri_kemendikbud',
+            'kiri_baliho_1', 'kiri_lawson', 'kiri_cgv', 'kiri_pocari', 'kiri_shell',
+            'kiri_matos', 'kiri_ruangguru', 'kiri_ubig', 'kiri_kemendikbud',
             'kiri_mcc_1', 'kiri_mcc_3', 'kiri_bsi_3', 'kiri_gacoan'
         ];
         const rightBuildingSequence = [
-            'kanan_basmallah', 'kanan_lawson',
-            'kanan_gramedia', 'kanan_kaffa', 'kanan_burgerking',
+            'kanan_basmallah', 'kanan_lawson', 'kanan_cgv', 'kanan_pocari', 'kanan_shell',
+            'kanan_gramedia', 'kanan_matos', 'kanan_burgerking',
             'kanan_kemendikbud', 'kanan_ruangguru', 'kanan_ubig', 'kanan_ruangguru_2',
             'kanan_bsi_1', 'kanan_baliho_2', 'kanan_mcc_2', 'kanan_burgerking_2', 'kanan_gacoan'
         ];
@@ -518,7 +524,11 @@ export default function GameSpeedPage() {
                     name.includes('bsi') ||
                     name.includes('lawson') ||
                     name.includes('gacoan') ||
-                    name.includes('burgerking');
+                    name.includes('burgerking') ||
+                    name.includes('cgv') ||
+                    name.includes('pocari') ||
+                    name.includes('matos') ||
+                    name.includes('shell');
             };
 
             const leftIsImportant = isLandmark(leftName);
@@ -1764,33 +1774,9 @@ export default function GameSpeedPage() {
             ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(logicalW, i); ctx.stroke();
         }
 
-        // 3. Scanner Text Overlay
-        ctx.font = '700 italic 10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.fillText('SCANNER / ACTIVE', logicalW / 2, 22);
+        // 3. Scanner Text Overlay - REMOVED
+        // Separator Line - REMOVED
 
-        // Separator Line
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(30, 30);
-        ctx.lineTo(logicalW - 30, 30);
-        ctx.stroke();
-
-        ctx.textAlign = 'right';
-        ctx.font = '600 9px monospace';
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.6)';
-        ctx.fillText('GPS SIGNAL', logicalW - 15, logicalH - 22);
-        ctx.fillText('TRACK: ACTIVE', logicalW - 15, logicalH - 12);
-
-        // Bottom Separator Line
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(30, logicalH - 35);
-        ctx.lineTo(logicalW - 30, logicalH - 35);
-        ctx.stroke();
 
         // 4. Track Line Projection
         if (!segments || segments.length < 10) {
@@ -1822,14 +1808,14 @@ export default function GameSpeedPage() {
         const trackH = maxZ - minZ || 1;
 
         // Custom Margins to Maximize Size
-        const marginSide = 15; // Tight side margins
-        const marginTop = 40;  // Space for SCANNER/ACTIVE Header
-        const marginBot = 45;  // Space for GPS text and Bottom Line
+        const marginSide = 40; // More centered (pressed in)
+        const marginTop = 30;
+        const marginBot = 30;
 
         const availW = logicalW - (marginSide * 2);
         const availH = logicalH - marginTop - marginBot;
 
-        const scale = Math.min(availW / trackW, availH / trackH);
+        const scale = Math.min(availW / trackW, availH / trackH) * 0.95; // Scale up slightly to 95%
 
         const tx = (px: number) => logicalW / 2 + (px - (minX + maxX) / 2) * scale;
         // Center Y in the available vertical space (shifted down by marginTop)
@@ -1837,12 +1823,13 @@ export default function GameSpeedPage() {
         const ty = (pz: number) => centerY + (pz - (minZ + maxZ) / 2) * scale;
 
         // Draw Blue Neon Track
+        // Draw Blue Neon Track
         ctx.beginPath();
         ctx.strokeStyle = '#2563eb';
-        ctx.lineWidth = 6;
+        ctx.lineWidth = 5; // Slightly bolder
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 8;
         ctx.shadowColor = '#3b82f6';
         ctx.moveTo(tx(points[0].x), ty(points[0].z));
         for (let i = 1; i < points.length; i++) ctx.lineTo(tx(points[i].x), ty(points[i].z));
@@ -1851,7 +1838,7 @@ export default function GameSpeedPage() {
         // Overlay Lighter Core for track
         ctx.beginPath();
         ctx.strokeStyle = '#60a5fa';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1.5; // Thinner core
         ctx.shadowBlur = 0;
         ctx.moveTo(tx(points[0].x), ty(points[0].z));
         for (let i = 1; i < points.length; i++) ctx.lineTo(tx(points[i].x), ty(points[i].z));
